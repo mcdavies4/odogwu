@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Odogwu — Spray money at events, celebrations, and parties. Download the app and make every moment legendary." />
+  <meta property="og:title" content="Odogwu — Spray Money, Make Memories" />
+  <meta property="og:description" content="The app that turns celebrations into legendary moments. Spray money digitally at events, parties, and milestones." />
+  <meta property="og:image" content="https://spraycash5079.builtwithrocket.new/icons/Icon-512.png" />
+  <meta property="og:url" content="https://odogwu.online" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <title>Odogwu — Spray Money, Make Memories</title>
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green-deep:   #080F0C;
+      --green-dark:   #0A3D2E;
+      --green-mid:    #0F5C44;
+      --green-light:  #162B20;
+      --gold:         #D4AF37;
+      --gold-dim:     rgba(212,175,55,0.18);
+      --gold-glow:    rgba(212,175,55,0.35);
+      --amber:        #F59E0B;
+      --text-primary: #FFFFFF;
+      --text-muted:   rgba(255,255,255,0.55);
+      --card-bg:      rgba(26,51,40,0.7);
+      --border:       rgba(212,175,55,0.15);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--green-deep);
+      color: var(--text-primary);
+      font-family: 'DM Sans', sans-serif;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* ── Animated background ── */
+    .bg-canvas {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      overflow: hidden;
+    }
+    .bg-orb {
+      position: absolute; border-radius: 50%;
+      filter: blur(80px); opacity: 0.25;
+      animation: drift 18s ease-in-out infinite alternate;
+    }
+    .bg-orb-1 { width: 600px; height: 600px; background: var(--green-mid); top: -200px; left: -150px; animation-delay: 0s; }
+    .bg-orb-2 { width: 400px; height: 400px; background: var(--gold); top: 30%; right: -100px; animation-delay: -6s; opacity: 0.12; }
+    .bg-orb-3 { width: 500px; height: 500px; background: var(--green-dark); bottom: -100px; left: 30%; animation-delay: -12s; }
+    @keyframes drift {
+      0%   { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(40px, 60px) scale(1.08); }
+    }
+
+    /* ── Noise overlay ── */
+    .noise {
+      position: fixed; inset: 0; z-index: 1; pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity: 0.4;
+    }
+
+    /* ── Layout ── */
+    .page { position: relative; z-index: 2; }
+
+    /* ── Nav ── */
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 6vw;
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      background: rgba(8,15,12,0.6);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.4rem; font-weight: 800;
+      color: var(--gold); letter-spacing: -0.5px;
+      text-decoration: none;
+    }
+    .nav-logo-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 10px var(--gold);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.7); }
+    }
+    .nav-cta {
+      display: flex; gap: 12px;
+    }
+    .btn-nav {
+      padding: 10px 22px; border-radius: 50px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.875rem; font-weight: 600;
+      cursor: pointer; text-decoration: none;
+      transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .btn-nav-ghost {
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      background: transparent;
+    }
+    .btn-nav-ghost:hover { border-color: var(--gold); color: var(--gold); }
+    .btn-nav-gold {
+      background: var(--gold); color: var(--green-deep);
+      border: none;
+    }
+    .btn-nav-gold:hover { transform: scale(1.05); box-shadow: 0 0 20px var(--gold-glow); }
+
+    /* ── Hero ── */
+    .hero {
+      min-height: 92vh;
+      display: grid; grid-template-columns: 1fr 1fr;
+      align-items: center; gap: 4rem;
+      padding: 80px 6vw 60px;
+    }
+    .hero-text { max-width: 560px; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 16px; border-radius: 50px;
+      border: 1px solid var(--border);
+      background: var(--gold-dim);
+      font-size: 0.8rem; font-weight: 600;
+      color: var(--gold); letter-spacing: 0.5px;
+      text-transform: uppercase; margin-bottom: 28px;
+    }
+    .hero-badge-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--gold);
+      animation: pulse-dot 1.5s ease-in-out infinite;
+    }
+    .hero-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: clamp(2.8rem, 5vw, 4.5rem);
+      font-weight: 800; line-height: 1.05;
+      letter-spacing: -1.5px;
+      margin-bottom: 24px;
+    }
+    .hero-title .gold { color: var(--gold); }
+    .hero-sub {
+      font-size: 1.1rem; line-height: 1.7;
+      color: var(--text-muted); margin-bottom: 44px;
+      max-width: 440px;
+    }
+    .hero-actions {
+      display: flex; gap: 16px; flex-wrap: wrap; align-items: center;
+    }
+    .btn-store {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 24px; border-radius: 16px;
+      text-decoration: none; transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      border: 1px solid;
+    }
+    .btn-store-play {
+      background: var(--gold); color: var(--green-deep);
+      border-color: var(--gold);
+    }
+    .btn-store-play:hover {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 12px 40px var(--gold-glow);
+    }
+    .btn-store-apple {
+      background: rgba(255,255,255,0.06);
+      color: var(--text-primary);
+      border-color: rgba(255,255,255,0.15);
+    }
+    .btn-store-apple:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.3);
+      transform: translateY(-3px);
+    }
+    .btn-store-icon { font-size: 1.6rem; line-height: 1; }
+    .btn-store-text { display: flex; flex-direction: column; }
+    .btn-store-label { font-size: 0.7rem; font-weight: 500; opacity: 0.7; letter-spacing: 0.3px; }
+    .btn-store-name { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1rem; font-weight: 700; line-height: 1.2; }
+
+    /* ── Phone mockup ── */
+    .hero-visual {
+      display: flex; justify-content: center; align-items: center;
+      position: relative;
+    }
+    .phone-wrap {
+      position: relative;
+      animation: float 6s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-18px); }
+    }
+    .phone-glow {
+      position: absolute; inset: -40px;
+      background: radial-gradient(ellipse at center, var(--gold-glow) 0%, transparent 70%);
+      border-radius: 50%; z-index: -1;
+      animation: glow-pulse 4s ease-in-out infinite;
+    }
+    @keyframes glow-pulse {
+      0%, 100% { opacity: 0.6; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.1); }
+    }
+    .phone-frame {
+      width: 280px; height: 560px;
+      background: linear-gradient(145deg, #1A3328, #0A1F17);
+      border-radius: 44px;
+      border: 2px solid rgba(212,175,55,0.3);
+      box-shadow:
+        0 40px 80px rgba(0,0,0,0.6),
+        0 0 0 1px rgba(255,255,255,0.05) inset,
+        0 1px 0 rgba(255,255,255,0.1) inset;
+      overflow: hidden; position: relative;
+      display: flex; flex-direction: column;
+    }
+    .phone-notch {
+      width: 100px; height: 28px;
+      background: #080F0C;
+      border-radius: 0 0 20px 20px;
+      margin: 0 auto;
+      position: relative; z-index: 2;
+    }
+    .phone-screen {
+      flex: 1; padding: 16px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .phone-header {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .phone-greeting { font-size: 0.65rem; color: rgba(255,255,255,0.5); }
+    .phone-name { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.85rem; font-weight: 700; color: #fff; }
+    .phone-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold), var(--amber));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; color: var(--green-deep);
+    }
+    .phone-balance-card {
+      background: linear-gradient(135deg, var(--green-mid), var(--green-dark));
+      border-radius: 20px; padding: 18px;
+      border: 1px solid rgba(212,175,55,0.2);
+    }
+    .phone-balance-label { font-size: 0.6rem; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
+    .phone-balance-amount {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.5rem; font-weight: 800; color: var(--gold);
+    }
+    .phone-actions {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+    }
+    .phone-action {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+    }
+    .phone-action-icon {
+      width: 36px; height: 36px; border-radius: 12px;
+      background: rgba(255,255,255,0.07);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+    }
+    .phone-action-label { font-size: 0.5rem; color: rgba(255,255,255,0.5); }
+    .phone-spray-btn {
+      background: linear-gradient(135deg, var(--gold), var(--amber));
+      border-radius: 16px; padding: 14px;
+      text-align: center;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.8rem; font-weight: 700; color: var(--green-deep);
+    }
+    .phone-recent { }
+    .phone-recent-label { font-size: 0.6rem; color: rgba(255,255,255,0.4); margin-bottom: 8px; }
+    .phone-recent-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .phone-recent-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--green-mid), var(--green-dark));
+      flex-shrink: 0;
+    }
+    .phone-recent-info { flex: 1; }
+    .phone-recent-name { font-size: 0.6rem; font-weight: 600; color: #fff; }
+    .phone-recent-time { font-size: 0.5rem; color: rgba(255,255,255,0.4); }
+    .phone-recent-amount { font-size: 0.65rem; font-weight: 700; color: var(--gold); }
+
+    /* ── Floating chips ── */
+    .chip-float {
+      position: absolute;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 8px 16px;
+      font-size: 0.75rem; font-weight: 600;
+      backdrop-filter: blur(12px);
+      white-space: nowrap;
+      animation: chip-bob 5s ease-in-out infinite;
+    }
+    .chip-1 { top: 10%; right: -20px; animation-delay: 0s; }
+    .chip-2 { bottom: 25%; left: -30px; animation-delay: -2.5s; }
+    .chip-3 { top: 55%; right: -40px; animation-delay: -1.5s; }
+    @keyframes chip-bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    .chip-icon { margin-right: 6px; }
+
+    /* ── Stats strip ── */
+    .stats-strip {
+      display: flex; justify-content: center; gap: 0;
+      padding: 40px 6vw;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: rgba(10,61,46,0.15);
+      overflow: hidden;
+    }
+    .stat-item {
+      flex: 1; max-width: 220px;
+      text-align: center; padding: 20px 24px;
+      border-right: 1px solid var(--border);
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-number {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 2.2rem; font-weight: 800;
+      color: var(--gold); line-height: 1;
+      margin-bottom: 6px;
+    }
+    .stat-label { font-size: 0.8rem; color: var(--text-muted); }
+
+    /* ── Features bento ── */
+    .section { padding: 100px 6vw; }
+    .section-label {
+      display: inline-block;
+      font-size: 0.75rem; font-weight: 700;
+      color: var(--gold); letter-spacing: 2px;
+      text-transform: uppercase; margin-bottom: 16px;
+    }
+    .section-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: clamp(2rem, 3.5vw, 3rem);
+      font-weight: 800; letter-spacing: -1px;
+      line-height: 1.1; margin-bottom: 60px;
+    }
+    .section-title .gold { color: var(--gold); }
+
+    .bento {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      grid-template-rows: auto;
+      gap: 16px;
+    }
+    .bento-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 24px; padding: 32px;
+      backdrop-filter: blur(12px);
+      transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+      overflow: hidden; position: relative;
+    }
+    .bento-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, var(--gold-dim) 0%, transparent 60%);
+      opacity: 0; transition: opacity 0.3s;
+      border-radius: 24px;
+    }
+    .bento-card:hover { transform: translateY(-4px); border-color: rgba(212,175,55,0.35); }
+    .bento-card:hover::before { opacity: 1; }
+
+    .bento-card-1 { grid-column: span 5; grid-row: span 2; }
+    .bento-card-2 { grid-column: span 7; }
+    .bento-card-3 { grid-column: span 4; }
+    .bento-card-4 { grid-column: span 3; }
+    .bento-card-5 { grid-column: span 5; }
+    .bento-card-6 { grid-column: span 7; }
+
+    .bento-emoji { font-size: 2.5rem; margin-bottom: 20px; display: block; }
+    .bento-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.2rem; font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .bento-desc { font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; }
+
+    .bento-card-1 .bento-title { font-size: 1.6rem; }
+    .bento-card-1 .bento-desc { font-size: 1rem; }
+
+    .bento-amount-display {
+      margin-top: 24px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 3rem; font-weight: 800;
+      color: var(--gold); line-height: 1;
+    }
+    .bento-amount-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
+
+    .bento-pill-row {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px;
+    }
+    .bento-pill {
+      padding: 6px 14px; border-radius: 50px;
+      background: var(--gold-dim); border: 1px solid var(--border);
+      font-size: 0.75rem; font-weight: 600; color: var(--gold);
+    }
+
+    /* ── How it works ── */
+    .how-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px;
+      border: 1px solid var(--border); border-radius: 24px; overflow: hidden;
+    }
+    .how-step {
+      padding: 40px 32px;
+      border-right: 1px solid var(--border);
+      position: relative;
+      transition: background 0.3s;
+    }
+    .how-step:last-child { border-right: none; }
+    .how-step:hover { background: rgba(212,175,55,0.05); }
+    .how-step-num {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 4rem; font-weight: 800;
+      color: var(--gold-dim); line-height: 1;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, var(--gold) 0%, transparent 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .how-step-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.15rem; font-weight: 700; margin-bottom: 10px;
+    }
+    .how-step-desc { font-size: 0.875rem; color: var(--text-muted); line-height: 1.6; }
+
+    /* ── Download CTA ── */
+    .cta-section {
+      padding: 100px 6vw;
+      text-align: center;
+      position: relative;
+    }
+    .cta-glow {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px; height: 300px;
+      background: radial-gradient(ellipse, var(--gold-glow) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .cta-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: clamp(2.5rem, 5vw, 4rem);
+      font-weight: 800; letter-spacing: -1.5px;
+      line-height: 1.1; margin-bottom: 20px;
+      position: relative;
+    }
+    .cta-sub {
+      font-size: 1.1rem; color: var(--text-muted);
+      margin-bottom: 48px; max-width: 480px; margin-left: auto; margin-right: auto;
+    }
+    .cta-buttons {
+      display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+    }
+    .btn-cta {
+      display: flex; align-items: center; gap: 14px;
+      padding: 18px 32px; border-radius: 20px;
+      text-decoration: none; font-family: 'DM Sans', sans-serif;
+      transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      border: 1px solid;
+    }
+    .btn-cta-primary {
+      background: var(--gold); color: var(--green-deep);
+      border-color: var(--gold);
+      box-shadow: 0 0 40px var(--gold-glow);
+    }
+    .btn-cta-primary:hover {
+      transform: translateY(-4px) scale(1.04);
+      box-shadow: 0 16px 60px var(--gold-glow);
+    }
+    .btn-cta-secondary {
+      background: rgba(255,255,255,0.05);
+      color: var(--text-primary);
+      border-color: rgba(255,255,255,0.15);
+    }
+    .btn-cta-secondary:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.3);
+      transform: translateY(-4px);
+    }
+    .btn-cta-icon { font-size: 2rem; line-height: 1; }
+    .btn-cta-text { display: flex; flex-direction: column; text-align: left; }
+    .btn-cta-label { font-size: 0.7rem; font-weight: 500; opacity: 0.7; letter-spacing: 0.3px; }
+    .btn-cta-name { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.1rem; font-weight: 700; }
+
+    /* ── Footer ── */
+    footer {
+      padding: 40px 6vw;
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 16px;
+    }
+    .footer-logo {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.2rem; font-weight: 800; color: var(--gold);
+      text-decoration: none;
+    }
+    .footer-links {
+      display: flex; gap: 24px; flex-wrap: wrap;
+    }
+    .footer-link {
+      font-size: 0.8rem; color: var(--text-muted);
+      text-decoration: none; transition: color 0.2s;
+    }
+    .footer-link:hover { color: var(--gold); }
+    .footer-copy { font-size: 0.75rem; color: var(--text-muted); }
+
+    /* ── Scroll animations ── */
+    .reveal {
+      opacity: 0; transform: translateY(30px);
+      transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1);
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+    .reveal-delay-4 { transition-delay: 0.4s; }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; text-align: center; padding: 60px 5vw 40px; gap: 60px; }
+      .hero-text { max-width: 100%; }
+      .hero-sub { max-width: 100%; }
+      .hero-actions { justify-content: center; }
+      .hero-visual { order: -1; }
+      .chip-1, .chip-2, .chip-3 { display: none; }
+      .bento { grid-template-columns: 1fr; }
+      .bento-card-1, .bento-card-2, .bento-card-3, .bento-card-4, .bento-card-5, .bento-card-6 { grid-column: span 1; grid-row: span 1; }
+      .how-grid { grid-template-columns: 1fr; }
+      .how-step { border-right: none; border-bottom: 1px solid var(--border); }
+      .how-step:last-child { border-bottom: none; }
+      .stats-strip { flex-wrap: wrap; }
+      .stat-item { border-right: none; border-bottom: 1px solid var(--border); min-width: 150px; }
+      footer { flex-direction: column; text-align: center; }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 16px 5vw; }
+      .btn-nav-ghost { display: none; }
+      .hero-title { font-size: 2.4rem; }
+      .phone-frame { width: 240px; height: 480px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-canvas">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+  </div>
+  <div class="noise"></div>
+
+  <div class="page">
+    <!-- Nav -->
+    <nav>
+      <a href="#" class="nav-logo">
+        <div class="nav-logo-dot"></div>
+        Odogwu
+      </a>
+      <div class="nav-cta">
+        <a href="#features" class="btn-nav btn-nav-ghost">Features</a>
+        <a href="#download" class="btn-nav btn-nav-gold">Download App</a>
+      </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-text">
+        <div class="hero-badge reveal">
+          <div class="hero-badge-dot"></div>
+          Now Available on Android
+        </div>
+        <h1 class="hero-title reveal reveal-delay-1">
+          Spray Money.<br/>
+          <span class="gold">Make Every</span><br/>
+          Moment Legendary.
+        </h1>
+        <p class="hero-sub reveal reveal-delay-2">
+          Odogwu turns celebrations into unforgettable experiences. Spray money digitally at weddings, birthdays, and parties — instantly, safely, and with style.
+        </p>
+        <div class="hero-actions reveal reveal-delay-3">
+          <a href="https://play.google.com/store/apps/details?id=com.odogwu.app" target="_blank" rel="noopener" class="btn-store btn-store-play">
+            <span class="btn-store-icon">▶</span>
+            <span class="btn-store-text">
+              <span class="btn-store-label">Get it on</span>
+              <span class="btn-store-name">Google Play</span>
+            </span>
+          </a>
+          <a href="https://apps.apple.com/app/odogwu" target="_blank" rel="noopener" class="btn-store btn-store-apple">
+            <span class="btn-store-icon">🍎</span>
+            <span class="btn-store-text">
+              <span class="btn-store-label">Download on the</span>
+              <span class="btn-store-name">App Store</span>
+            </span>
+          </a>
+        </div>
+      </div>
+
+      <div class="hero-visual reveal reveal-delay-2">
+        <div class="phone-wrap">
+          <div class="phone-glow"></div>
+          <div class="phone-frame">
+            <div class="phone-notch"></div>
+            <div class="phone-screen">
+              <div class="phone-header">
+                <div>
+                  <div class="phone-greeting">Good evening,</div>
+                  <div class="phone-name">Chukwuemeka 👋</div>
+                </div>
+                <div class="phone-avatar">CE</div>
+              </div>
+              <div class="phone-balance-card">
+                <div class="phone-balance-label">Wallet Balance</div>
+                <div class="phone-balance-amount">₦ 45,200</div>
+              </div>
+              <div class="phone-actions">
+                <div class="phone-action">
+                  <div class="phone-action-icon">💸</div>
+                  <div class="phone-action-label">Spray</div>
+                </div>
+                <div class="phone-action">
+                  <div class="phone-action-icon">📥</div>
+                  <div class="phone-action-label">Receive</div>
+                </div>
+                <div class="phone-action">
+                  <div class="phone-action-icon">🏦</div>
+                  <div class="phone-action-label">Withdraw</div>
+                </div>
+                <div class="phone-action">
+                  <div class="phone-action-icon">📊</div>
+                  <div class="phone-action-label">History</div>
+                </div>
+              </div>
+              <div class="phone-spray-btn">💰 Start Spraying</div>
+              <div class="phone-recent">
+                <div class="phone-recent-label">RECENT SPRAYS</div>
+                <div class="phone-recent-item">
+                  <div class="phone-recent-avatar"></div>
+                  <div class="phone-recent-info">
+                    <div class="phone-recent-name">Adaeze Okafor</div>
+                    <div class="phone-recent-time">2 mins ago</div>
+                  </div>
+                  <div class="phone-recent-amount">₦5,000</div>
+                </div>
+                <div class="phone-recent-item">
+                  <div class="phone-recent-avatar" style="background:linear-gradient(135deg,#D4AF37,#F59E0B)"></div>
+                  <div class="phone-recent-info">
+                    <div class="phone-recent-name">Babatunde Eze</div>
+                    <div class="phone-recent-time">15 mins ago</div>
+                  </div>
+                  <div class="phone-recent-amount">₦2,500</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="chip-float chip-1">💸 ₦10,000 sprayed!</div>
+          <div class="chip-float chip-2">🎉 Party mode ON</div>
+          <div class="chip-float chip-3">✅ Instant transfer</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats -->
+    <div class="stats-strip reveal">
+      <div class="stat-item">
+        <div class="stat-number">₦∞</div>
+        <div class="stat-label">No spray limit</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">2s</div>
+        <div class="stat-label">Average spray time</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">100%</div>
+        <div class="stat-label">Secure transactions</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">24/7</div>
+        <div class="stat-label">Always available</div>
+      </div>
+    </div>
+
+    <!-- Features -->
+    <section class="section" id="features">
+      <div class="reveal">
+        <span class="section-label">Why Odogwu</span>
+        <h2 class="section-title">Built for the <span class="gold">culture</span></h2>
+      </div>
+
+      <div class="bento">
+        <div class="bento-card bento-card-1 reveal">
+          <span class="bento-emoji">💸</span>
+          <div class="bento-title">Spray with precision</div>
+          <div class="bento-desc">Set any amount, add a personal message, and spray it to anyone at the event. No cash, no mess — just vibes.</div>
+          <div class="bento-amount-display">₦5,000</div>
+          <div class="bento-amount-sub">sprayed to Adaeze at her wedding 🎊</div>
+        </div>
+        <div class="bento-card bento-card-2 reveal reveal-delay-1">
+          <span class="bento-emoji">🔐</span>
+          <div class="bento-title">PIN & biometric protection</div>
+          <div class="bento-desc">Every transaction is secured with your 4-digit PIN or fingerprint. Your money moves only when you say so.</div>
+          <div class="bento-pill-row">
+            <span class="bento-pill">Fingerprint</span>
+            <span class="bento-pill">4-digit PIN</span>
+            <span class="bento-pill">Face ID</span>
+          </div>
+        </div>
+        <div class="bento-card bento-card-3 reveal reveal-delay-2">
+          <span class="bento-emoji">⚡</span>
+          <div class="bento-title">Instant delivery</div>
+          <div class="bento-desc">Money reaches the recipient in under 2 seconds. No delays, no excuses.</div>
+        </div>
+        <div class="bento-card bento-card-4 reveal reveal-delay-3">
+          <span class="bento-emoji">📜</span>
+          <div class="bento-title">Full receipts</div>
+          <div class="bento-desc">Every spray generates a shareable receipt with transaction ID, timestamp, and amount.</div>
+        </div>
+        <div class="bento-card bento-card-5 reveal reveal-delay-1">
+          <span class="bento-emoji">🏦</span>
+          <div class="bento-title">Withdraw anytime</div>
+          <div class="bento-desc">Received sprays? Cash out to any Nigerian bank account in seconds. Your money, your terms.</div>
+        </div>
+        <div class="bento-card bento-card-6 reveal reveal-delay-2">
+          <span class="bento-emoji">📊</span>
+          <div class="bento-title">Transaction history at a glance</div>
+          <div class="bento-desc">Filter by date, type, or amount. Every spray and withdrawal is logged and searchable — so you never lose track.</div>
+          <div class="bento-pill-row">
+            <span class="bento-pill">All transactions</span>
+            <span class="bento-pill">Sprays only</span>
+            <span class="bento-pill">Withdrawals</span>
+            <span class="bento-pill">Date range</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="section" style="padding-top: 0;">
+      <div class="reveal">
+        <span class="section-label">How it works</span>
+        <h2 class="section-title">Three steps to <span class="gold">legendary</span></h2>
+      </div>
+      <div class="how-grid reveal">
+        <div class="how-step">
+          <div class="how-step-num">01</div>
+          <div class="how-step-title">Create your wallet</div>
+          <div class="how-step-desc">Sign up with your phone number or email. Verify your identity once — then you're ready to spray.</div>
+        </div>
+        <div class="how-step">
+          <div class="how-step-num">02</div>
+          <div class="how-step-title">Top up your balance</div>
+          <div class="how-step-desc">Fund your Odogwu wallet via bank transfer. Your dedicated account number is always ready.</div>
+        </div>
+        <div class="how-step">
+          <div class="how-step-num">03</div>
+          <div class="how-step-title">Spray & celebrate</div>
+          <div class="how-step-desc">Enter the amount, add a message, confirm with your PIN — and let the celebration begin.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Download CTA -->
+    <section class="cta-section" id="download">
+      <div class="cta-glow"></div>
+      <h2 class="cta-title reveal">
+        Ready to spray?<br/>
+        <span style="color: var(--gold);">Download Odogwu.</span>
+      </h2>
+      <p class="cta-sub reveal reveal-delay-1">
+        Available on Android now. iOS coming soon. Join thousands of Nigerians making every celebration legendary.
+      </p>
+      <div class="cta-buttons reveal reveal-delay-2">
+        <a href="https://play.google.com/store/apps/details?id=com.odogwu.app" target="_blank" rel="noopener" class="btn-cta btn-cta-primary">
+          <span class="btn-cta-icon">▶</span>
+          <span class="btn-cta-text">
+            <span class="btn-cta-label">Get it on</span>
+            <span class="btn-cta-name">Google Play</span>
+          </span>
+        </a>
+        <a href="https://apps.apple.com/app/odogwu" target="_blank" rel="noopener" class="btn-cta btn-cta-secondary">
+          <span class="btn-cta-icon">🍎</span>
+          <span class="btn-cta-text">
+            <span class="btn-cta-label">Coming soon on</span>
+            <span class="btn-cta-name">App Store</span>
+          </span>
+        </a>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <a href="#" class="footer-logo">Odogwu</a>
+      <div class="footer-links">
+        <a href="/privacy-policy" class="footer-link">Privacy Policy</a>
+        <a href="/terms-of-use" class="footer-link">Terms of Use</a>
+        <a href="/electronic-consent" class="footer-link">Electronic Consent</a>
+      </div>
+      <div class="footer-copy">© 2026 Odogwu. All rights reserved.</div>
+    </footer>
+  </div>
+
+  <script>
+    // Scroll reveal
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+    reveals.forEach(el => observer.observe(el));
+
+    // Trigger hero reveals immediately
+    setTimeout(() => {
+      document.querySelectorAll('.hero .reveal, .hero-badge').forEach(el => el.classList.add('visible'));
+    }, 100);
+
+    // Parallax on mouse move (desktop only)
+    if (window.innerWidth > 900) {
+      document.addEventListener('mousemove', (e) => {
+        const x = (e.clientX / window.innerWidth - 0.5) * 20;
+        const y = (e.clientY / window.innerHeight - 0.5) * 20;
+        document.querySelector('.phone-wrap').style.transform =
+          `translateY(${-18 * Math.sin(Date.now() / 6000)}px) rotateY(${x * 0.3}deg) rotateX(${-y * 0.2}deg)`;
+      });
+    }
+  </script>
+</body>
+</html>
