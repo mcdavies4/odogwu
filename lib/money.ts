@@ -1,7 +1,7 @@
 export const PACKS_NAIRA = [2000, 5000, 10000, 20000, 50000, 100000];
 export const MIN_PACK_NAIRA = 1000;
 export const MAX_PACK_NAIRA = 1_000_000;
-export const DENOMINATIONS = [100, 200, 500, 1000];
+export const DENOMINATIONS = [50, 100, 200, 500, 1000];
 
 export function feePercent(): number {
   const n = Number(process.env.PLATFORM_FEE_PERCENT ?? 5);

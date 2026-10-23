@@ -142,7 +142,7 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, demo =
       if (soundRef.current) horn();
       setFalling((prev) => {
         const shower = Array.from({ length: 22 }, (_, i) => ({
-          key: -(now + i), amount: [1000, 500, 1000, 200][i % 4], left: hash(now + i) * 90, delay: i * 0.07,
+          key: -(now + i), amount: [1000, 500, 200, 1000, 100, 50][i % 6], left: hash(now + i) * 90, delay: i * 0.07,
         }));
         return [...prev, ...shower].slice(-MAX_FALLING - 22);
       });
@@ -185,7 +185,7 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, demo =
       const big = Math.random() < 0.18;
       const name = big ? (Math.random() < 0.5 ? "Chief Emeka" : "Big Segun") : guests[Math.floor(Math.random() * guests.length)];
       const notes = big ? 10 + Math.floor(Math.random() * 16) : 2 + Math.floor(Math.random() * 7);
-      const denom = big ? 1000 : [100, 200, 500, 500, 1000][Math.floor(Math.random() * 5)];
+      const denom = big ? 1000 : [50, 100, 200, 500, 500, 1000][Math.floor(Math.random() * 6)];
       for (let i = 0; i < notes; i++) {
         timers.push(setTimeout(() => {
           addSprays([{ id: id++, guest_name: name, amount_naira: denom, created_at: new Date().toISOString() }]);

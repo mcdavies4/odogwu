@@ -10,7 +10,8 @@ const RAIN = [
   { amount: 200, left: "26%", delay: "1.8s" },
   { amount: 1000, left: "62%", delay: "2.7s" },
   { amount: 500, left: "14%", delay: "3.6s" },
-  { amount: 100, left: "44%", delay: "4.5s" },
+  { amount: 50, left: "44%", delay: "4.5s" },
+  { amount: 200, left: "70%", delay: "5.4s" },
 ];
 
 export default function Home() {
