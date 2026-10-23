@@ -182,7 +182,57 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 .row { display: flex; gap: 10px; flex-wrap: wrap; }
 .row > * { flex: 1 1 160px; }
 
+/* ---------- Flying cash: path → sway → tilt → 3D tumble ---------- */
+.flutter { position: absolute; width: clamp(110px, 12vw, 190px); perspective: 900px; pointer-events: none; }
+.flutter-path, .flutter-sway, .flutter-tilt, .flutter-tumble { width: 100%; }
+.flutter-tumble { position: relative; aspect-ratio: 2.1 / 1; transform-style: preserve-3d; animation: tumble var(--spin) linear infinite; }
+.flutter-face { position: absolute; inset: 0; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; filter: drop-shadow(0 8px 10px rgba(0,0,0,.35)); }
+.flutter-back { transform: rotateY(180deg); }
+.flutter-tilt { transform: rotate(var(--tilt)); }
+.flutter-sway { animation: sway var(--sway) ease-in-out infinite alternate; }
+
+@keyframes tumble {
+  from { transform: rotate3d(var(--ax), var(--ay), var(--az), 0deg); }
+  to   { transform: rotate3d(var(--ax), var(--ay), var(--az), 360deg); }
+}
+@keyframes sway {
+  from { transform: translateX(calc(var(--sway-x) * -1)) rotate(-8deg); }
+  to   { transform: translateX(var(--sway-x)) rotate(8deg); }
+}
+
+/* Falling from the top like cash thrown over the dance floor */
+.flutter-fall { top: -160px; }
+.flutter-fall .flutter-path { animation: fallPath var(--dur) cubic-bezier(.35,.15,.65,1) var(--delay) forwards; }
+.flutter-loop .flutter-path { animation-iteration-count: infinite; }
+@keyframes fallPath {
+  0%   { transform: translate3d(0, 0, 0); opacity: 0; }
+  6%   { opacity: 1; }
+  100% { transform: translate3d(var(--drift), calc(100vh + 320px), 0); opacity: 1; }
+}
+
+/* Flicked up off the phone: shoots up, slows, spins off screen */
+.flutter-fly { position: fixed; z-index: 50; }
+.flutter-fly .flutter-path { animation: flyPath var(--dur) cubic-bezier(.25,.55,.45,1) forwards; }
+.flutter-fly .flutter-tumble { animation-duration: var(--spin); }
+/* Up fast, hang for a beat while spinning (like thrown cash), then drift off the top */
+@keyframes flyPath {
+  0%   { transform: translate3d(0, 0, 0) scale(1); opacity: 1; }
+  30%  { transform: translate3d(calc(var(--fly-x) * .4), -24vh, 0) scale(.9); }
+  62%  { transform: translate3d(calc(var(--fly-x) * .7), -36vh, 0) scale(.82); opacity: 1; }
+  100% { transform: translate3d(var(--fly-x), -110vh, 0) scale(.72); opacity: .2; }
+}
+
+/* Little burst when a note leaves your hand */
+.spark { position: fixed; z-index: 49; width: 10px; height: 10px; border-radius: 2px; pointer-events: none; animation: spark .7s ease-out forwards; }
+@keyframes spark {
+  from { transform: translate(0, 0) rotate(0); opacity: 1; }
+  to   { transform: translate(var(--sx), var(--sy)) rotate(260deg); opacity: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .flutter-tumble, .flutter-sway { animation: none !important; }
+  .flutter-fall .flutter-path, .flutter-fly .flutter-path { animation-duration: .01s !important; }
+  .spark { display: none; }
   .rain-note, .wall-rain .fall, .hint { animation: none !important; }
   .rain-note { display: none; }
   .note-live.fly { transition: opacity .2s ease; }

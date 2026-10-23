@@ -3,10 +3,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { supabaseBrowser } from "@/lib/supabase";
 import { naira } from "@/lib/money";
-import { Note } from "./Note";
+import { FlutterNote } from "./FlutterNote";
 
 export type Spray = { id: number; guest_name: string; amount_naira: number; created_at: string };
-type Falling = { key: number; amount: number; left: number; dx: number; r0: number; r1: number };
+type Falling = { key: number; amount: number; left: number; delay: number };
 
 const MAX_FALLING = 40;
 
@@ -26,13 +26,11 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial }: {
     setSprays((prev) => [...prev, ...fresh]);
     setLatest(fresh[fresh.length - 1]);
     setFalling((prev) => {
-      const add = fresh.slice(-12).map((s) => ({
+      const add = fresh.slice(-12).map((s, i) => ({
         key: s.id,
         amount: s.amount_naira,
         left: Math.random() * 82,
-        dx: Math.random() * 160 - 80,
-        r0: Math.random() * 40 - 20,
-        r1: Math.random() * 300 - 150,
+        delay: i * 0.18,
       }));
       return [...prev, ...add].slice(-MAX_FALLING);
     });
@@ -78,12 +76,7 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial }: {
     <div className="wall pattern">
       <div className="wall-rain" aria-hidden="true">
         {falling.map((f) => (
-          <Note
-            key={f.key}
-            amount={f.amount}
-            className="fall"
-            style={{ left: `${f.left}%`, ["--dx" as string]: `${f.dx}px`, ["--r0" as string]: `${f.r0}deg`, ["--r1" as string]: `${f.r1}deg` } as React.CSSProperties}
-          />
+          <FlutterNote key={f.key} seed={f.key * 31 + 7} amount={f.amount} mode="fall" style={{ left: `${f.left}%`, ["--delay" as string]: `${f.delay}s` } as React.CSSProperties} />
         ))}
       </div>
 

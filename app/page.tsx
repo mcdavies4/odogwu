@@ -1,11 +1,14 @@
 import Link from "next/link";
-import { Logo, Note } from "@/components/Note";
+import { Logo } from "@/components/Note";
+import { FlutterNote } from "@/components/FlutterNote";
 
 const RAIN = [
-  { amount: 1000, left: "8%", delay: "0s" },
-  { amount: 500, left: "52%", delay: "1.1s" },
-  { amount: 200, left: "28%", delay: "2.2s" },
-  { amount: 1000, left: "64%", delay: "3.1s" },
+  { amount: 1000, left: "6%", delay: "0s" },
+  { amount: 500, left: "50%", delay: "0.9s" },
+  { amount: 200, left: "26%", delay: "1.8s" },
+  { amount: 1000, left: "62%", delay: "2.7s" },
+  { amount: 500, left: "14%", delay: "3.6s" },
+  { amount: 100, left: "44%", delay: "4.5s" },
 ];
 
 export default function Home() {
@@ -31,7 +34,14 @@ export default function Home() {
           </div>
           <div className="hero-stage" aria-hidden="true">
             {RAIN.map((r, i) => (
-              <Note key={i} amount={r.amount} className="rain-note" style={{ left: r.left, animationDelay: r.delay }} />
+              <FlutterNote
+                key={i}
+                seed={i * 7919 + 13}
+                amount={r.amount}
+                mode="fall"
+                loop
+                style={{ left: r.left, ["--delay" as string]: r.delay, ["--dur" as string]: "5.4s" } as React.CSSProperties}
+              />
             ))}
           </div>
         </div>

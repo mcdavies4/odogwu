@@ -2,9 +2,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Note } from "./Note";
+import { FlutterNote } from "./FlutterNote";
 import { DENOMINATIONS, naira } from "@/lib/money";
 
 type Phase = "checking" | "pending" | "failed" | "ready" | "error";
+type Fly = { id: number; amount: number; left: number; top: number; width: number; flyX: number };
+type Spark = { id: number; x: number; y: number; sx: number; sy: number; color: string };
 
 export function SprayScreen({ slug, celebrant, reference }: { slug: string; celebrant: string; reference: string }) {
   const [phase, setPhase] = useState<Phase>(reference ? "checking" : "error");
@@ -89,6 +92,51 @@ export function SprayScreen({ slug, celebrant, reference }: { slug: string; cele
     });
   }, [reference]);
 
+  // 3. The fun part: every sprayed note becomes a free-flying, tumbling note.
+  const [flying, setFlying] = useState<Fly[]>([]);
+  const [sparks, setSparks] = useState<Spark[]>([]);
+  const nextId = useRef(1);
+
+  const launch = useCallback((rect: DOMRect, dx: number, amount: number) => {
+    const id = nextId.current++;
+    setFlying((f) => [...f.slice(-14), { id, amount, left: rect.left, top: rect.top, width: rect.width, flyX: dx * 2.2 + (Math.random() * 120 - 60) }]);
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const colors = ["#f2b705", "#2fa36b", "#ff5c8a", "#fcefd9"];
+    setSparks((s) => [
+      ...s.slice(-40),
+      ...Array.from({ length: 10 }, (_, i) => {
+        const a = (Math.PI * 2 * i) / 10 + Math.random() * 0.5;
+        const d = 60 + Math.random() * 70;
+        return { id: id * 100 + i, x: cx, y: cy, sx: Math.cos(a) * d, sy: Math.sin(a) * d - 40, color: colors[i % colors.length] };
+      }),
+    ]);
+    setTimeout(() => setFlying((f) => f.filter((n) => n.id !== id)), 2400);
+    setTimeout(() => setSparks((s) => s.filter((p) => Math.floor(p.id / 100) !== id)), 800);
+  }, []);
+
+  const sprayWithFx = useCallback((rect: DOMRect | undefined, dx: number) => {
+    if (rect) launch(rect, dx, denom);
+    spray(denom);
+  }, [launch, spray, denom]);
+
+  const fx = (
+    <>
+      {flying.map((n) => (
+        <FlutterNote
+          key={n.id}
+          seed={n.id * 4099}
+          amount={n.amount}
+          mode="fly"
+          style={{ left: n.left, top: n.top, width: n.width, ["--fly-x" as string]: `${n.flyX}px` } as React.CSSProperties}
+        />
+      ))}
+      {sparks.map((p) => (
+        <span key={p.id} className="spark" style={{ left: p.x, top: p.y, background: p.color, ["--sx" as string]: `${p.sx}px`, ["--sy" as string]: `${p.sy}px` } as React.CSSProperties} />
+      ))}
+    </>
+  );
+
   if (phase === "checking") return <Centered><h1 style={{ fontSize: 26 }}>Confirming your payment…</h1></Centered>;
   if (phase === "pending")
     return (
@@ -113,10 +161,14 @@ export function SprayScreen({ slug, celebrant, reference }: { slug: string; cele
         <h1 style={{ fontSize: 28 }}>You sprayed {naira(total)}!</h1>
         <p className="muted">{celebrant} will receive it in their bank the next working day.</p>
         {reference === "demo" ? (
-          <Link className="btn btn-block" href="/host/new">Create your own celebration</Link>
+          <>
+            <button className="btn btn-block" onClick={() => { setTotal(5000); setServerRemaining(5000); }}>Spray again</button>
+            <Link className="btn btn-ghost btn-block" href="/host/new">Create your own celebration</Link>
+          </>
         ) : (
           <Link className="btn btn-block" href={`/e/${slug}`}>Buy another pack</Link>
         )}
+        {fx}
       </Centered>
     );
   }
@@ -134,7 +186,8 @@ export function SprayScreen({ slug, celebrant, reference }: { slug: string; cele
         </div>
       </div>
 
-      <SwipeNote amount={denom} disabled={denom > remaining} onSpray={() => spray(denom)} />
+      <SwipeNote amount={denom} disabled={denom > remaining} onSpray={(rect, dx) => sprayWithFx(rect, dx)} />
+      {fx}
 
       <div>
         {notice && <div className="error small" role="alert" onClick={() => setNotice(null)}>{notice}</div>}
@@ -146,7 +199,8 @@ export function SprayScreen({ slug, celebrant, reference }: { slug: string; cele
             </button>
           ))}
         </div>
-        <button type="button" className="btn btn-ghost btn-block" style={{ marginTop: 10 }} disabled={denom > remaining} onClick={() => spray(denom)}>
+        <button type="button" className="btn btn-ghost btn-block" style={{ marginTop: 10 }} disabled={denom > remaining}
+          onClick={() => sprayWithFx(document.querySelector(".note-live")?.getBoundingClientRect(), Math.random() * 60 - 30)}>
           Tap to spray {naira(denom)}
         </button>
       </div>
@@ -159,7 +213,7 @@ function Centered({ children }: { children: React.ReactNode }) {
 }
 
 /** The note you flick upward. Distance or a quick flick both count. */
-function SwipeNote({ amount, disabled, onSpray }: { amount: number; disabled: boolean; onSpray: () => void }) {
+function SwipeNote({ amount, disabled, onSpray }: { amount: number; disabled: boolean; onSpray: (rect: DOMRect, dx: number) => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const start = useRef<{ x: number; y: number; t: number } | null>(null);
   const [cls, setCls] = useState("");
@@ -192,15 +246,14 @@ function SwipeNote({ amount, disabled, onSpray }: { amount: number; disabled: bo
     const v = -dy / Math.max(1, performance.now() - start.current.t);
     start.current = null;
     if (-dy > 90 || (v > 0.55 && -dy > 30)) {
-      setCls("fly");
-      setT(dx * 1.4, -window.innerHeight, dx / 6 - 10, 0);
+      // Hand the note over to a free-flying copy at exactly where it was released,
+      // then put a fresh note back on the stack straight away for rapid spraying.
+      const rect = ref.current?.getBoundingClientRect();
       setHinted(false);
-      onSpray();
-      setTimeout(() => {
-        setCls("");
-        setT(0, 0, 0, 1);
-        setCount((c) => c + 1);
-      }, 380);
+      if (rect) onSpray(rect, dx);
+      setCls("");
+      setT(0, 0, 0, 1);
+      setCount((c) => c + 1);
     } else {
       setCls("snap");
       setT(0, 0, 0);

@@ -25,6 +25,32 @@ export function Note({ amount, className, style }: { amount: number; className?:
   );
 }
 
+/** Back of the note, seen when it flips in the air. */
+export function NoteBack({ amount, className }: { amount: number; className?: string }) {
+  const tint = amount >= 1000 ? "#e7a400" : amount >= 500 ? "#2fa36b" : "#d94f7b";
+  const shade = amount >= 1000 ? "#b07d00" : amount >= 500 ? "#1f7a4d" : "#a8345b";
+  return (
+    <svg viewBox="0 0 420 200" className={className} aria-hidden="true">
+      <defs>
+        <linearGradient id={`nb${amount}`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor={tint} />
+          <stop offset="1" stopColor={shade} />
+        </linearGradient>
+      </defs>
+      <rect x="2" y="2" width="416" height="196" rx="16" fill={`url(#nb${amount})`} stroke="#fff6e2" strokeOpacity=".5" strokeWidth="3" />
+      <g stroke="#fff6e2" strokeOpacity=".25" strokeWidth="3" fill="none">
+        <path d="M14 40 q40 -30 80 0 t80 0 t80 0 t80 0 t80 0" />
+        <path d="M14 160 q40 30 80 0 t80 0 t80 0 t80 0 t80 0" />
+      </g>
+      <circle cx="90" cy="100" r="44" fill="none" stroke="#fff6e2" strokeOpacity=".6" strokeWidth="4" />
+      <text x="90" y="113" textAnchor="middle" fontFamily="Unbounded, sans-serif" fontWeight="800" fontSize="34" fill="#fff6e2">₦</text>
+      <text x="390" y="125" textAnchor="end" fontFamily="Unbounded, sans-serif" fontWeight="800" fontSize="56" fill="#fff6e2">
+        {amount.toLocaleString("en-NG")}
+      </text>
+    </svg>
+  );
+}
+
 export function Logo() {
   return (
     <svg viewBox="0 0 64 64" aria-hidden="true">
