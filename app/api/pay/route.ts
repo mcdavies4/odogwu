@@ -57,7 +57,8 @@ export async function POST(req: Request) {
       reference,
       subaccount: ev.subaccount_code,
       platformChargeKobo: fee,
-      callbackUrl: `${site}/e/${ev.slug}/spray?reference=${reference}`,
+      // Paystack appends ?trxref=…&reference=… itself, so no query string here.
+      callbackUrl: `${site}/e/${ev.slug}/spray`,
       metadata: { event: ev.slug, guest_name: guestName, pack_naira: packNaira },
     });
     return NextResponse.json({ url: tx.authorization_url, reference });
