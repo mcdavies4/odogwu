@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Logo } from "@/components/Note";
 import { FlutterNote } from "@/components/FlutterNote";
+import { InstallButton } from "@/components/InstallButton";
+import { MyCelebrations } from "@/components/MyCelebrations";
 
 const RAIN = [
   { amount: 1000, left: "6%", delay: "0s" },
@@ -30,6 +32,7 @@ export default function Home() {
             <div className="actions">
               <Link href="/host/new" className="btn">Create a celebration</Link>
               <Link href="/demo" className="btn btn-ghost">Try spraying</Link>
+              <InstallButton />
             </div>
           </div>
           <div className="hero-stage" aria-hidden="true">
@@ -46,6 +49,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <MyCelebrations />
 
       <section className="section" id="how">
         <div className="two-col">

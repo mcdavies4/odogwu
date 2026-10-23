@@ -6,6 +6,8 @@ import { naira } from "@/lib/money";
 import { Logo } from "@/components/Note";
 import { ShareQR } from "@/components/ShareQR";
 import { ToggleOpen } from "@/components/ToggleOpen";
+import { InstallButton } from "@/components/InstallButton";
+import { RememberHost } from "@/components/MyCelebrations";
 
 export const dynamic = "force-dynamic";
 export const metadata = { robots: { index: false } };
@@ -42,6 +44,7 @@ export default async function HostDashboard({
     <>
       <header className="topbar"><Link href="/" className="brand"><Logo />Odogwu</Link></header>
       <main className="wrap stack">
+        <RememberHost slug={ev.slug} hostKey={key} title={ev.title} />
         <div>
           <h1 style={{ fontSize: 30 }}>{ev.title}</h1>
           <p className="muted">
@@ -68,6 +71,7 @@ export default async function HostDashboard({
           <ToggleOpen slug={ev.slug} hostKey={key} open={ev.is_open} />
         </div>
         <p className="small muted">Put the spray wall on a projector or TV. It updates live as guests spray.</p>
+        <InstallButton className="btn btn-ghost btn-block" label="Install Odogwu on this phone" />
 
         <section className="stack">
           <h2 style={{ fontSize: 20 }}>Spray packs</h2>
