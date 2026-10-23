@@ -80,3 +80,16 @@ Import the repo → add the env vars from `.env.example` (set `NEXT_PUBLIC_SITE_
 - Host login instead of the private-link key
 - MC mode: big-screen "Top sprayer" callouts, sound effects
 - Downloadable spray report for the celebrant
+
+## Before an event: test the projector laptop
+Open `/demo/wall?stress=60` on the laptop that will run the spray wall. It fires 60 fake sprays a second (a very busy party). If notes fall smoothly, the laptop is fine. Use `?stress=200` for an extreme test.
+
+Also open the app the day before: free Supabase projects pause after a week with no activity.
+
+## Changing the note designs
+The wall uses pre-rendered images of the notes (`public/notes/*.webp`) because spinning a picture is much lighter than redrawing vector art. After editing `components/Note.tsx`, run the site (`npm run build && npm run start`) and then:
+```
+pip install playwright pillow
+python -m playwright install chromium
+python scripts/render-notes.py
+```

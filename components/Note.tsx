@@ -203,3 +203,25 @@ export function Logo() {
     </svg>
   );
 }
+
+const IMAGE_VALUES = [50, 100, 200, 500, 1000];
+
+/** Path to the pre-rendered picture of a note (see scripts/render-notes.py). */
+export function noteImage(amount: number, face: "front" | "back" = "front") {
+  const v = [...IMAGE_VALUES].reverse().find((d) => d <= amount) ?? IMAGE_VALUES[0];
+  return `/notes/${v}-${face}.webp`;
+}
+
+/**
+ * Lightweight note for anything animated in bulk (falling cash, the pile).
+ * Spinning a picture is far cheaper than redrawing the vector note every frame.
+ */
+export function NoteImg({ amount, face = "front", className, style }: {
+  amount: number; face?: "front" | "back"; className?: string; style?: React.CSSProperties;
+}) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={noteImage(amount, face)} alt="" aria-hidden="true" draggable={false} decoding="async"
+      className={className} style={style} width={420} height={200} />
+  );
+}

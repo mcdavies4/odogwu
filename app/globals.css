@@ -180,7 +180,7 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 .wall-rain { z-index: 2; }
 .wall-pile { position: absolute; left: 0; right: 0; bottom: -30px; height: 220px; z-index: 1; pointer-events: none; }
 @media (min-width: 900px) { .wall-pile { right: 360px; } }
-.pile-note { position: absolute; width: clamp(90px, 9vw, 150px); filter: drop-shadow(0 4px 6px rgba(0,0,0,.4)); animation: land .5s ease-out both; }
+.pile-note { position: absolute; width: clamp(90px, 9vw, 150px); animation: land .5s ease-out both; }
 @keyframes land { from { opacity: 0; translate: 0 -40px; } to { opacity: 1; translate: 0 0; } }
 
 .callout-zone { flex: 1; display: grid; place-items: center; min-height: 260px; }
@@ -241,7 +241,7 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 .flutter { position: absolute; width: clamp(110px, 12vw, 190px); perspective: 900px; pointer-events: none; }
 .flutter-path, .flutter-sway, .flutter-tilt, .flutter-tumble { width: 100%; }
 .flutter-tumble { position: relative; aspect-ratio: 2.1 / 1; transform-style: preserve-3d; animation: tumble var(--spin) linear infinite; }
-.flutter-face { position: absolute; inset: 0; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; filter: drop-shadow(0 8px 10px rgba(0,0,0,.35)); }
+.flutter-face { position: absolute; inset: 0; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
 .flutter-back { transform: rotateY(180deg); }
 .flutter-tilt { transform: rotate(var(--tilt)); }
 .flutter-sway { animation: sway var(--sway) ease-in-out infinite alternate; }
@@ -257,7 +257,7 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 
 /* Falling from the top like cash thrown over the dance floor */
 .flutter-fall { top: -160px; }
-.flutter-fall .flutter-path { animation: fallPath var(--dur) cubic-bezier(.35,.15,.65,1) var(--delay) forwards; }
+.flutter-fall .flutter-path { will-change: transform; animation: fallPath var(--dur) cubic-bezier(.35,.15,.65,1) var(--delay) forwards; }
 .flutter-loop .flutter-path { animation-iteration-count: infinite; }
 @keyframes fallPath {
   0%   { transform: translate3d(0, 0, 0); opacity: 0; }
@@ -295,3 +295,5 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 
 /* five note values fit on a phone */
 .denoms .pack { font-size: 13px; padding: 0 2px; min-height: 56px; }
+
+.pile-note { height: auto; }

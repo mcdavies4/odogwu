@@ -1,4 +1,4 @@
-import { Note, NoteBack } from "./Note";
+import { NoteImg } from "./Note";
 
 /**
  * A note that tumbles through the air like real cash:
@@ -42,8 +42,8 @@ export function FlutterNote({ amount, mode, loop, style, seed = Math.floor(Math.
         <div className="flutter-sway">
           <div className="flutter-tilt">
             <div className="flutter-tumble">
-              <Note amount={amount} className="flutter-face" />
-              <NoteBack amount={amount} className="flutter-face flutter-back" />
+              <NoteImg amount={amount} className="flutter-face" />
+              <NoteImg amount={amount} face="back" className="flutter-face flutter-back" />
             </div>
           </div>
         </div>

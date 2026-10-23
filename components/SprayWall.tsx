@@ -1,22 +1,24 @@
 "use client";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { supabaseBrowser } from "@/lib/supabase";
 import { naira, compactNaira } from "@/lib/money";
 import { crossedMilestone, lineFor, tierFor } from "@/lib/hype";
 import { chime, disableSound, enableSound, horn, swish } from "@/lib/wallSound";
 import { FlutterNote } from "./FlutterNote";
-import { Note } from "./Note";
+import { NoteImg } from "./Note";
 
 export type Spray = { id: number; guest_name: string; amount_naira: number; created_at: string };
 type Falling = { key: number; amount: number; left: number; delay: number };
 type Callout = { key: number; name: string; amount: number; tier: number; line: string };
 type Milestone = { key: number; amount: number };
 
-const MAX_FALLING = 48;
+const MAX_FALLING = 40;
 const PILE_SIZE = 90;
 const BURST_WINDOW_MS = 7000;
 const CALLOUT_MS = 3600;
+const FLUSH_MS = 250;
+const NEW_PER_FLUSH = 8;
 
 // Deterministic pseudo-random from a spray id, so server and browser draw the same pile.
 function hash(n: number) {
@@ -47,8 +49,40 @@ function useCountUp(target: number) {
   return Math.round(shown);
 }
 
-export function SprayWall({ eventId, title, celebrant, guestUrl, initial, demo = false }: {
-  eventId: string; title: string; celebrant: string; guestUrl: string; initial: Spray[]; demo?: boolean;
+/** Only this small piece re-renders every animation frame while the total counts up. */
+function Total({ value }: { value: number }) {
+  const shown = useCountUp(value);
+  return <div className="wall-total">{naira(shown)}</div>;
+}
+
+/** The cash pile on the floor. Memoised so it only redraws when new notes land. */
+const Pile = memo(function Pile({ items }: { items: { key: number; amount: number; x: number; y: number; r: number }[] }) {
+  return (
+    <div className="wall-pile" aria-hidden="true">
+      {items.map((p) => (
+        <PileNote key={p.key} amount={p.amount} x={p.x} y={p.y} r={p.r} />
+      ))}
+    </div>
+  );
+});
+const PileNote = memo(function PileNote({ amount, x, y, r }: { amount: number; x: number; y: number; r: number }) {
+  return <NoteImg amount={amount} className="pile-note" style={{ left: `${x}%`, bottom: `${y}px`, transform: `rotate(${r}deg)` }} />;
+});
+
+/** Falling notes. Memoised so callouts and the leaderboard don't redraw them. */
+const Rain = memo(function Rain({ items }: { items: { key: number; amount: number; left: number; delay: number }[] }) {
+  return (
+    <div className="wall-rain" aria-hidden="true">
+      {items.map((f) => (
+        <FlutterNote key={f.key} seed={Math.abs(f.key) * 31 + 7} amount={f.amount} mode="fall"
+          style={{ left: `${f.left}%`, ["--delay" as string]: `${f.delay}s` } as React.CSSProperties} />
+      ))}
+    </div>
+  );
+});
+
+export function SprayWall({ eventId, title, celebrant, guestUrl, initial, demo = false, stress = 0 }: {
+  eventId: string; title: string; celebrant: string; guestUrl: string; initial: Spray[]; demo?: boolean; stress?: number;
 }) {
   const [sprays, setSprays] = useState<Spray[]>(initial);
   const [falling, setFalling] = useState<Falling[]>([]);
@@ -108,7 +142,22 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, demo =
   }, [showNext]);
 
   // ---------- New sprays arrive (realtime, catch-up poll, or demo) ----------
+  // They're buffered and drawn together 4 times a second: looks identical, far lighter.
+  const pending = useRef<Spray[]>([]);
+  const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const processRef = useRef<(rows: Spray[]) => void>(() => {});
   const addSprays = useCallback((rows: Spray[]) => {
+    pending.current.push(...rows);
+    if (flushTimer.current) return;
+    flushTimer.current = setTimeout(() => {
+      flushTimer.current = null;
+      const batch = pending.current.splice(0);
+      if (batch.length) processRef.current(batch);
+    }, FLUSH_MS);
+  }, []);
+  useEffect(() => () => { if (flushTimer.current) clearTimeout(flushTimer.current); }, []);
+
+  const processBatch = useCallback((rows: Spray[]) => {
     const fresh = rows.filter((s) => !seen.current.has(s.id));
     if (!fresh.length) return;
     const now = Date.now();
@@ -122,7 +171,7 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, demo =
     }
     setSprays((prev) => [...prev, ...fresh]);
     setFalling((prev) => {
-      const add = fresh.slice(-14).map((s, i) => ({ key: s.id, amount: s.amount_naira, left: hash(s.id) * 84, delay: i * 0.16 }));
+      const add = fresh.slice(-NEW_PER_FLUSH).map((s, i) => ({ key: s.id, amount: s.amount_naira, left: hash(s.id) * 84, delay: i * 0.05 }));
       return [...prev, ...add].slice(-MAX_FALLING);
     });
     if (soundRef.current) fresh.slice(-6).forEach((_, i) => setTimeout(swish, i * 90));
@@ -149,6 +198,7 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, demo =
       setTimeout(() => setMilestone((m) => (m && m.key === now ? null : m)), 4200);
     }
   }, [hype]);
+  processRef.current = processBatch;
 
   // ---------- Live data ----------
   useEffect(() => {
@@ -180,6 +230,21 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, demo =
     let id = 1;
     let alive = true;
     const timers: ReturnType<typeof setTimeout>[] = [];
+
+    // Stress test: /demo/wall?stress=60 fires 60 sprays a second from 300 different guests.
+    if (stress > 0) {
+      const perTick = Math.max(1, Math.round(stress / 20));
+      const iv = setInterval(() => {
+        const rows: Spray[] = [];
+        for (let i = 0; i < perTick; i++) {
+          const g = Math.random() < 0.3 ? guests[Math.floor(Math.random() * guests.length)] : `Guest ${1 + Math.floor(Math.random() * 300)}`;
+          rows.push({ id: id++, guest_name: g, amount_naira: [50, 100, 200, 500, 1000][Math.floor(Math.random() * 5)], created_at: new Date().toISOString() });
+        }
+        rows.forEach((r) => addSprays([r])); // one at a time, exactly like realtime delivers them
+      }, 50);
+      return () => clearInterval(iv);
+    }
+
     function burst() {
       if (!alive) return;
       const big = Math.random() < 0.18;
@@ -195,11 +260,10 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, demo =
     }
     timers.push(setTimeout(burst, 800));
     return () => { alive = false; timers.forEach(clearTimeout); };
-  }, [demo, addSprays]);
+  }, [demo, stress, addSprays]);
 
   // ---------- Derived ----------
   const total = useMemo(() => sprays.reduce((s, r) => s + r.amount_naira, 0), [sprays]);
-  const shownTotal = useCountUp(total);
   const board = useMemo(() => {
     const m = new Map<string, { name: string; amt: number }>();
     for (const s of sprays) {
@@ -261,19 +325,8 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, demo =
 
   return (
     <div className={`wall pattern${milestone ? " wall-shake" : ""}`}>
-      <div className="wall-pile" aria-hidden="true">
-        {pile.map((p) => (
-          <Note key={p.key} amount={p.amount} className="pile-note"
-            style={{ left: `${p.x}%`, bottom: `${p.y}px`, transform: `rotate(${p.r}deg)` }} />
-        ))}
-      </div>
-
-      <div className="wall-rain" aria-hidden="true">
-        {falling.map((f) => (
-          <FlutterNote key={f.key} seed={Math.abs(f.key) * 31 + 7} amount={f.amount} mode="fall"
-            style={{ left: `${f.left}%`, ["--delay" as string]: `${f.delay}s` } as React.CSSProperties} />
-        ))}
-      </div>
+      <Pile items={pile} />
+      <Rain items={falling} />
 
       <main className="wall-main">
         <h1>{title}</h1>
@@ -290,7 +343,7 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, demo =
         </div>
 
         <div className="wall-total-label">Sprayed on {celebrant} so far</div>
-        <div className="wall-total">{naira(shownTotal)}</div>
+        <Total value={total} />
       </main>
 
       <aside className="wall-side">
