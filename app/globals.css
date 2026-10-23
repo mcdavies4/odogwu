@@ -164,6 +164,51 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
   0% { transform: translate3d(0,0,0) rotate(var(--r0)); opacity: 1; }
   100% { transform: translate3d(var(--dx), 115vh, 0) rotate(var(--r1)); opacity: .9; }
 }
+/* ---------- Spray wall: the party screen ---------- */
+.wall-main { z-index: 3; min-height: 100dvh; }
+.wall-side { z-index: 3; }
+.wall-rain { z-index: 2; }
+.wall-pile { position: absolute; left: 0; right: 0; bottom: -30px; height: 220px; z-index: 1; pointer-events: none; }
+@media (min-width: 900px) { .wall-pile { right: 360px; } }
+.pile-note { position: absolute; width: clamp(90px, 9vw, 150px); filter: drop-shadow(0 4px 6px rgba(0,0,0,.4)); animation: land .5s ease-out both; }
+@keyframes land { from { opacity: 0; translate: 0 -40px; } to { opacity: 1; translate: 0 0; } }
+
+.callout-zone { flex: 1; display: grid; place-items: center; min-height: 260px; }
+.callout { text-align: center; animation: pop .55s cubic-bezier(.2,1.4,.4,1) both; }
+.callout-name { font-family: var(--display); font-weight: 800; font-size: clamp(36px, 6.5vw, 104px); line-height: 1; text-shadow: 0 6px 30px rgba(0,0,0,.5); }
+.callout-line { font-size: clamp(20px, 2.6vw, 40px); font-weight: 700; color: var(--lace-dim); margin-top: 10px; }
+.callout-amount { font-family: var(--display); font-weight: 800; font-size: clamp(30px, 4.6vw, 72px); color: var(--gold); margin-top: 12px; animation: bump .35s ease-out; }
+.callout.tier-1 .callout-line, .callout.tier-2 .callout-line, .callout.tier-3 .callout-line { color: var(--gold); }
+.callout.tier-2 .callout-name, .callout.tier-3 .callout-name { color: var(--gold); text-shadow: 0 0 40px rgba(242,183,5,.55); }
+.callout.tier-3 { animation: pop .55s cubic-bezier(.2,1.4,.4,1) both, glow 1.2s ease-in-out infinite alternate; }
+@keyframes pop { from { opacity: 0; transform: scale(.6) translateY(30px); } to { opacity: 1; transform: none; } }
+@keyframes bump { from { transform: scale(1.25); } to { transform: none; } }
+@keyframes glow { from { filter: drop-shadow(0 0 0 rgba(242,183,5,0)); } to { filter: drop-shadow(0 0 28px rgba(242,183,5,.6)); } }
+
+.wall-total { text-shadow: 0 6px 40px rgba(0,0,0,.6), 0 2px 4px rgba(42,8,32,.9); margin-bottom: 120px; }
+.wall h1, .wall-total-label, .callout-line { text-shadow: 0 2px 6px rgba(42,8,32,.95), 0 0 24px rgba(42,8,32,.8); }
+.board li.lead { color: var(--gold); }
+.board .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.leader-flash { background: var(--gold); color: var(--wine); font-weight: 800; padding: 10px 12px; border-radius: var(--r-sm); margin-bottom: 10px; animation: pop .5s cubic-bezier(.2,1.4,.4,1) both; }
+
+.milestone { position: fixed; inset: 0; z-index: 6; display: grid; place-content: center; text-align: center; background: radial-gradient(circle, rgba(42,8,32,.55), rgba(42,8,32,.9)); animation: milestone 4.2s ease both; pointer-events: none; }
+.milestone-amount { font-family: var(--display); font-weight: 800; color: var(--gold); font-size: clamp(64px, 13vw, 220px); line-height: 1; text-shadow: 0 0 60px rgba(242,183,5,.6); }
+.milestone-line { font-size: clamp(22px, 3vw, 46px); font-weight: 700; margin-top: 12px; }
+@keyframes milestone {
+  0% { opacity: 0; transform: scale(1.4); }
+  12% { opacity: 1; transform: scale(1); }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.wall-shake .wall-main { animation: shake .5s ease-in-out 2; }
+.wall-shake .wall-rain { z-index: 6; }
+.milestone { z-index: 5; }
+@keyframes shake { 0%,100% { transform: none; } 25% { transform: translate(-6px, 2px); } 75% { transform: translate(6px, -2px); } }
+
+.wall-controls { position: fixed; top: 14px; right: 14px; z-index: 7; display: flex; gap: 8px; transition: opacity .4s ease; }
+.wall-controls .btn { min-height: 40px; padding: 0 16px; font-size: 14px; background: rgba(42,8,32,.7); }
+.wall-controls.hidden { opacity: 0; pointer-events: none; }
+
 .qr-box { background: var(--lace); color: var(--wine); padding: 14px; border-radius: var(--r-sm); display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; font-weight: 700; }
 .qr-box small { display: block; font-weight: 500; font-size: 13px; word-break: break-all; }
 
