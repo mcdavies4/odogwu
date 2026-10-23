@@ -297,3 +297,14 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 .denoms .pack { font-size: 13px; padding: 0 2px; min-height: 56px; }
 
 .pile-note { height: auto; }
+
+/* Demo visits (admin) */
+.table-wrap { overflow-x: auto; }
+.visits { width: 100%; border-collapse: collapse; font-size: 15px; }
+.visits th { text-align: left; font-weight: 600; color: var(--lace-dim); padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.visits td { padding: 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.visits td:first-child { font-weight: 700; text-transform: capitalize; }
+.visits tr.untagged td:first-child { color: var(--lace-dim); text-transform: none; font-weight: 500; }
+.link-row { display: flex; gap: 12px; align-items: center; justify-content: space-between; background: var(--wine); border-radius: var(--r-sm); padding: 12px 14px; }
+.link-row code { display: block; font-size: 13px; color: var(--lace-dim); word-break: break-all; margin-top: 2px; }
+.link-row .btn { min-height: 40px; padding: 0 16px; flex: none; }

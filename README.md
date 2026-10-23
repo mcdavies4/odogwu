@@ -93,3 +93,11 @@ pip install playwright pillow
 python -m playwright install chromium
 python scripts/render-notes.py
 ```
+
+## See which venues opened your demo
+1. In Supabase → SQL Editor, run `supabase/demo-visits.sql` once.
+2. In Vercel → Settings → Environment Variables, add `ADMIN_KEY` (any long private word), then redeploy.
+3. Open `https://YOUR-DOMAIN/admin/visits?key=YOUR_ADMIN_KEY`. Bookmark it.
+4. Use **Make a tracking link** on that page to get a personal link for each venue you email (e.g. `/demo/wall?ref=eko-grand-hall`).
+
+For overall traffic (including untagged links already sent), turn on **Analytics** in your Vercel project.
