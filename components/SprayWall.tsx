@@ -81,8 +81,8 @@ const Rain = memo(function Rain({ items }: { items: { key: number; amount: numbe
   );
 });
 
-export function SprayWall({ eventId, title, celebrant, guestUrl, initial, demo = false, stress = 0 }: {
-  eventId: string; title: string; celebrant: string; guestUrl: string; initial: Spray[]; demo?: boolean; stress?: number;
+export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee, demo = false, stress = 0 }: {
+  eventId: string; title: string; celebrant: string; guestUrl: string; initial: Spray[]; payee?: string; demo?: boolean; stress?: number;
 }) {
   const [sprays, setSprays] = useState<Spray[]>(initial);
   const [falling, setFalling] = useState<Falling[]>([]);
@@ -300,6 +300,24 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, demo =
     }));
   }, [sprays]);
 
+  // ---------- Keep the projector laptop awake for the whole party ----------
+  useEffect(() => {
+    type Sentinel = { release: () => Promise<void> };
+    let lock: Sentinel | null = null;
+    const nav = navigator as Navigator & { wakeLock?: { request: (t: "screen") => Promise<Sentinel> } };
+    async function grab() {
+      try {
+        if (nav.wakeLock && document.visibilityState === "visible") lock = await nav.wakeLock.request("screen");
+      } catch {
+        // not supported or not allowed; the laptop's own sleep settings apply
+      }
+    }
+    void grab();
+    const again = () => { if (document.visibilityState === "visible") void grab(); };
+    document.addEventListener("visibilitychange", again);
+    return () => { document.removeEventListener("visibilitychange", again); void lock?.release().catch(() => {}); };
+  }, []);
+
   // ---------- Controls: sound + full screen, fade away when the mouse is idle ----------
   useEffect(() => {
     let t: ReturnType<typeof setTimeout>;
@@ -351,6 +369,11 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, demo =
           <QRCodeSVG value={guestUrl} size={120} bgColor="#fcefd9" fgColor="#2a0820" marginSize={0} />
           <div>Scan to spray {celebrant}<small>{guestUrl.replace(/^https?:\/\//, "")}</small></div>
         </div>
+        {payee && (
+          <p className="payee">
+            Money goes to <strong>{payee}</strong>. Check your phone shows the same name before you pay.
+          </p>
+        )}
         <div>
           <h2 style={{ fontSize: 22, marginBottom: 8 }}>Top sprayers</h2>
           {leaderFlash && <div className="leader-flash" key={leaderFlash}>New top sprayer: {leaderFlash}!</div>}

@@ -22,6 +22,7 @@ export default async function DemoWall({ searchParams }: { searchParams: Promise
         title="Tolu & Chidi's wedding"
         celebrant="the couple"
         guestUrl={`${siteUrl()}/demo${tag ? `?ref=${tag}` : ""}`}
+        payee="TOLULOPE ADEBAYO"
         initial={[]}
       />
     </>

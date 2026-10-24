@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getPublicEvent, siteUrl } from "@/lib/events";
-import { supabaseAdmin } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase-server";
 import { SprayWall, type Spray } from "@/components/SprayWall";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +23,7 @@ export default async function WallPage({ params }: { params: Promise<{ slug: str
       title={ev.title}
       celebrant={ev.celebrant_name}
       guestUrl={`${siteUrl()}/e/${ev.slug}`}
+      payee={ev.account_name}
       initial={(data ?? []) as Spray[]}
     />
   );

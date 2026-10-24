@@ -308,3 +308,7 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 .link-row { display: flex; gap: 12px; align-items: center; justify-content: space-between; background: var(--wine); border-radius: var(--r-sm); padding: 12px 14px; }
 .link-row code { display: block; font-size: 13px; color: var(--lace-dim); word-break: break-all; margin-top: 2px; }
 .link-row .btn { min-height: 40px; padding: 0 16px; flex: none; }
+
+/* Verified payee on the wall: guests can check a table QR hasn't been swapped */
+.wall-side .payee { font-size: 14px; line-height: 1.4; color: var(--lace-dim); margin-top: -10px; }
+.wall-side .payee strong { color: var(--lace); }

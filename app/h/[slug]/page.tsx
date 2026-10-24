@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { supabaseAdmin } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase-server";
+import { headers } from "next/headers";
+import { allow, clientId, safeEqual } from "@/lib/security";
 import { siteUrl } from "@/lib/events";
 import { naira } from "@/lib/money";
 import { Logo } from "@/components/Note";
@@ -25,7 +27,10 @@ export default async function HostDashboard({
   const { key } = await searchParams;
   const db = supabaseAdmin();
   const { data: ev } = await db.from("events").select("*").eq("slug", slug).maybeSingle();
-  if (!ev || !key || ev.host_key !== key) notFound();
+  if (!ev || !key || !safeEqual(key, ev.host_key)) {
+    await allow(`hostfail:${clientId(await headers())}`, 600, 30);
+    notFound();
+  }
 
   const { data: payments } = await db
     .from("payments")

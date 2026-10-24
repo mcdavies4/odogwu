@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { supabaseAdmin } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase-server";
+import { headers } from "next/headers";
+import { allow, blocked, clientId, safeEqual } from "@/lib/security";
 import { siteUrl } from "@/lib/events";
 import { Logo } from "@/components/Note";
 import { LinkMaker } from "@/components/LinkMaker";
@@ -19,7 +21,13 @@ const venueName = (ref: string | null) => (ref ? ref.replace(/-/g, " ") : "Untag
 export default async function Visits({ searchParams }: { searchParams: Promise<{ key?: string }> }) {
   const { key } = await searchParams;
   const adminKey = process.env.ADMIN_KEY;
-  if (!adminKey || !key || key !== adminKey) notFound();
+  const who = clientId(await headers());
+  // After 10 wrong guesses from one connection, even the right key is refused for 15 minutes.
+  if (await blocked(`adminfail:${who}`, 900, 10)) notFound();
+  if (!adminKey || adminKey.length < 8 || !safeEqual(key, adminKey)) {
+    await allow(`adminfail:${who}`, 900, 10);
+    notFound();
+  }
 
   const { data, error } = await supabaseAdmin()
     .from("demo_visits")

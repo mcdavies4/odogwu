@@ -101,3 +101,26 @@ python scripts/render-notes.py
 4. Use **Make a tracking link** on that page to get a personal link for each venue you email (e.g. `/demo/wall?ref=eko-grand-hall`).
 
 For overall traffic (including untagged links already sent), turn on **Analytics** in your Vercel project.
+
+## Security
+What's built in:
+- **Payments can't be faked.** Every payment is re-checked with Paystack on the server (amount and currency), and the webhook signature is verified.
+- **Nobody can spray more than they paid.** The database locks each spray pack.
+- **Secrets stay on the server.** The Supabase service key and Paystack key are in files marked `server-only`; the build fails if browser code ever imports them.
+- **Database locked down.** The public key can only read sprays from the last 3 days (for the live wall) and can't write anything.
+- **Rate limits** on every action (bank lookups, creating celebrations, payments, sprays, demo tracking, admin login) so bots can't hammer the site or burn your Paystack quota. Limits are generous because a whole hall can share one Wi-Fi.
+- **Admin lock-out** after 10 wrong keys in 15 minutes. Host and admin keys are compared in constant time.
+- **Wall-safe names:** links, phone numbers, emails and offensive words are refused as guest or celebration names.
+- **Browser protections:** Content Security Policy, no framing (stops click-jacking), strict referrer rules so private links don't leak, and private pages are never cached or indexed.
+- **Analytics never records** host keys or payment references.
+- **Won't go blank mid-party:** crash pages, a self-reloading spray wall, and the projector screen is kept awake.
+- **Keep-alive:** a daily Vercel Cron job pings the database so Supabase never pauses.
+
+**One-time setup:** run `supabase/security.sql` in Supabase → SQL Editor.
+
+**Your checklist**
+1. Turn on two-factor login for GitHub, Vercel, Supabase and Paystack.
+2. Keep the GitHub repo **private**.
+3. Make `ADMIN_KEY` at least 20 random characters.
+4. Never paste the Supabase service key or Paystack secret key into chat, email or code. If one ever leaks, create a new one and update Vercel.
+5. Tell hosts to show the spray wall on screen: its QR code is always genuine, and it shows the bank-verified name guests should see before paying.

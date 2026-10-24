@@ -1,4 +1,5 @@
-import { supabaseAdmin } from "./supabase";
+import "server-only";
+import { supabaseAdmin } from "./supabase-server";
 import { verifyTransaction } from "./paystack";
 
 export type PaymentRow = {

@@ -1,19 +1,23 @@
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase-server";
 import { initializeTransaction } from "@/lib/paystack";
 import { makeReference } from "@/lib/ids";
 import { feeKobo, MAX_PACK_NAIRA, MIN_PACK_NAIRA } from "@/lib/money";
+import { allow, cleanText, clientId, nameProblem, tooMany } from "@/lib/security";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: Request) {
+  // Generous: a whole hall can share one Wi-Fi or mobile-network address.
+  if (!(await allow(`pay:${clientId(req.headers)}`, 300, 60))) return tooMany();
   const body = await req.json().catch(() => ({}));
-  const slug = String(body.slug || "");
-  const guestName = String(body.guestName || "").trim().replace(/\s+/g, " ").slice(0, 40);
+  const slug = cleanText(body.slug, 60);
+  const guestName = cleanText(body.guestName, 40);
   const packNaira = Math.round(Number(body.packNaira));
-  let guestEmail = String(body.guestEmail || "").trim().toLowerCase();
+  let guestEmail = cleanText(body.guestEmail, 120).toLowerCase();
 
-  if (!guestName) return NextResponse.json({ error: "Tell the celebrant who's spraying!" }, { status: 400 });
+  const nameIssue = nameProblem(guestName);
+  if (nameIssue) return NextResponse.json({ error: nameIssue }, { status: 400 });
   if (!Number.isFinite(packNaira) || packNaira < MIN_PACK_NAIRA || packNaira > MAX_PACK_NAIRA) {
     return NextResponse.json({ error: `Spray packs are ₦${MIN_PACK_NAIRA.toLocaleString()} and up.` }, { status: 400 });
   }
