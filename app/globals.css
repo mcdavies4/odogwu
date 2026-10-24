@@ -338,3 +338,14 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
   .visits th, .visits td { padding: 6px 8px; white-space: normal; }
   .visits tr { break-inside: avoid; }
 }
+
+/* Anonymous spraying */
+.anon-toggle { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; background: var(--plum); border: 1.5px solid var(--line); border-radius: var(--r-sm); padding: 14px 16px; cursor: pointer; }
+.anon-toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.anon-track { width: 50px; height: 30px; border-radius: 999px; background: var(--wine); border: 1.5px solid var(--line); position: relative; transition: background .2s ease; }
+.anon-thumb { position: absolute; top: 3px; left: 3px; width: 21px; height: 21px; border-radius: 50%; background: var(--lace-dim); transition: transform .2s ease, background .2s ease; }
+.anon-toggle input:checked + .anon-track { background: var(--gold); border-color: var(--gold); }
+.anon-toggle input:checked + .anon-track .anon-thumb { transform: translateX(20px); background: var(--wine); }
+.anon-toggle input:focus-visible + .anon-track { outline: 3px solid var(--gold); outline-offset: 3px; }
+.anon-text small { display: block; color: var(--lace-dim); font-size: 14px; margin-top: 2px; }
+.pill.anon { background: rgba(242,183,5,.18); white-space: nowrap; }

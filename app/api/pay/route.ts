@@ -4,6 +4,7 @@ import { initializeTransaction } from "@/lib/paystack";
 import { makeReference } from "@/lib/ids";
 import { feeKobo, MAX_PACK_NAIRA, MIN_PACK_NAIRA } from "@/lib/money";
 import { allow, cleanText, clientId, nameProblem, tooMany } from "@/lib/security";
+import { ANONYMOUS } from "@/lib/hype";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -12,11 +13,14 @@ export async function POST(req: Request) {
   if (!(await allow(`pay:${clientId(req.headers)}`, 300, 60))) return tooMany();
   const body = await req.json().catch(() => ({}));
   const slug = cleanText(body.slug, 60);
-  const guestName = cleanText(body.guestName, 40);
+  const anonymous = body.anonymous === true;
+  const typedName = cleanText(body.guestName, 40);
+  // Anonymous guests appear as "Anonymous" everywhere public; their name (if any) stays private.
+  const guestName = anonymous ? ANONYMOUS : typedName;
   const packNaira = Math.round(Number(body.packNaira));
   let guestEmail = cleanText(body.guestEmail, 120).toLowerCase();
 
-  const nameIssue = nameProblem(guestName);
+  const nameIssue = anonymous ? (typedName ? nameProblem(typedName) : null) : nameProblem(typedName);
   if (nameIssue) return NextResponse.json({ error: nameIssue }, { status: 400 });
   if (!Number.isFinite(packNaira) || packNaira < MIN_PACK_NAIRA || packNaira > MAX_PACK_NAIRA) {
     return NextResponse.json({ error: `Spray packs are ₦${MIN_PACK_NAIRA.toLocaleString()} and up.` }, { status: 400 });
@@ -44,14 +48,21 @@ export async function POST(req: Request) {
   const amountKobo = packNaira * 100;
   const fee = feeKobo(packNaira);
 
-  const { error } = await db.from("payments").insert({
+  const row: Record<string, unknown> = {
     event_id: ev.id,
     reference,
     guest_name: guestName,
     guest_email: guestEmail,
     amount_kobo: amountKobo,
     fee_kobo: fee,
-  });
+  };
+  let { error } = await db.from("payments").insert(
+    anonymous ? { ...row, anonymous: true, private_name: typedName || null } : row
+  );
+  if (error && anonymous) {
+    // anonymous.sql not installed yet: still save them as "Anonymous" (privacy first).
+    ({ error } = await db.from("payments").insert(row));
+  }
   if (error) return NextResponse.json({ error: "Could not start payment" }, { status: 500 });
 
   try {
@@ -63,7 +74,7 @@ export async function POST(req: Request) {
       platformChargeKobo: fee,
       // Paystack appends ?trxref=…&reference=… itself, so no query string here.
       callbackUrl: `${site}/e/${ev.slug}/spray`,
-      metadata: { event: ev.slug, guest_name: guestName, pack_naira: packNaira },
+      metadata: { event: ev.slug, guest_name: guestName, anonymous, pack_naira: packNaira },
     });
     return NextResponse.json({ url: tx.authorization_url, reference });
   } catch (e) {

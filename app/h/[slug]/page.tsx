@@ -15,7 +15,7 @@ import { RememberHost } from "@/components/MyCelebrations";
 export const dynamic = "force-dynamic";
 export const metadata = { robots: { index: false } };
 
-type Payment = { reference: string; guest_name: string; amount_kobo: number; status: string; created_at: string; paid_at: string | null };
+type Payment = { reference: string; guest_name: string; amount_kobo: number; status: string; created_at: string; paid_at: string | null; private_name?: string | null };
 
 export default async function HostDashboard({
   params,
@@ -32,7 +32,7 @@ export default async function HostDashboard({
 
   const { data: payments } = await db
     .from("payments")
-    .select("reference,guest_name,amount_kobo,status,created_at,paid_at")
+    .select("*")
     .eq("event_id", ev.id)
     .neq("status", "failed")
     .order("created_at", { ascending: false })
@@ -87,7 +87,7 @@ export default async function HostDashboard({
               {(payments as Payment[]).map((p) => (
                 <li key={p.reference}>
                   <span>
-                    {p.guest_name}
+                    {p.guest_name === "Anonymous" ? `🤫 ${p.private_name || "Anonymous"}` : p.guest_name}
                     <span className={`pill ${p.status}`}>{p.status === "success" ? "Paid" : "Waiting"}</span>
                   </span>
                   <strong>{naira(Number(p.amount_kobo) / 100)}</strong>

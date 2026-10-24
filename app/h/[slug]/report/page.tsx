@@ -49,7 +49,7 @@ export default async function SprayReport({
           <div className="stat"><b>{naira(r.total)}</b><span>Total gifts</span></div>
           <div className="stat"><b>{r.guests.length}</b><span>{r.guests.length === 1 ? "Guest" : "Guests"}</span></div>
           <div className="stat"><b>{r.packs}</b><span>Spray packs</span></div>
-          <div className="stat"><b>{r.guests[0] ? r.guests[0].name : "—"}</b><span>Top sprayer</span></div>
+          <div className="stat"><b>{r.guests[0] ? (r.guests[0].anonymous ? "Secret Odogwu 🤫" : r.guests[0].name) : "—"}</b><span>Top sprayer</span></div>
         </div>
 
         <div className="row no-print">
@@ -57,6 +57,11 @@ export default async function SprayReport({
           <PrintButton />
         </div>
 
+        {r.guests.some((g) => g.anonymous) && (
+          <p className="small muted">
+            🤫 Guests marked &quot;sprayed anonymously&quot; showed as Secret Odogwu on the wall. Only you can see their names here, so please keep them private.
+          </p>
+        )}
         {unsprayed > 0 && (
           <p className="small muted">
             {naira(unsprayed)} was paid but not swiped on the screen. It&apos;s still yours: every pack is a gift once it&apos;s paid.
@@ -80,7 +85,10 @@ export default async function SprayReport({
                 {r.guests.map((g, i) => (
                   <tr key={g.name + i}>
                     <td>{i + 1}</td>
-                    <td className="who">{g.name}</td>
+                    <td className="who">
+                      {g.name}
+                      {g.anonymous && <span className="pill anon">{g.name === "Anonymous" ? "🤫 no name given" : "🤫 sprayed anonymously"}</span>}
+                    </td>
                     <td className="num">{naira(g.gift)}</td>
                     <td className="num">{g.packs}</td>
                     <td>{time(g.first)}{g.last !== g.first ? `–${time(g.last)}` : ""}</td>

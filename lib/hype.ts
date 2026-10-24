@@ -1,3 +1,15 @@
+// Stored name for anonymous guests, and how the wall shows them.
+export const ANONYMOUS = "Anonymous";
+export const SECRET_LABEL = "Secret\u00a0Odogwu\u00a0🤫";
+export const displayName = (name: string) => (name.trim() === ANONYMOUS ? SECRET_LABEL : name.trim());
+
+const SECRET_LINES = [
+  ["is spraying in secret!", "no name, just love!"],
+  ["no name, big love! 🔥", "the money is raining!"],
+  ["somebody is not playing! 👑", "who is this Odogwu?!"],
+  ["the whole hall wants to know who! 👑", "a legend in disguise!"],
+];
+
 // What the wall says about a guest's spraying streak. Grows with the amount.
 export const TIERS = [
   { min: 1_000, lines: ["is spraying!", "is showing love!", "don land!"] },
@@ -12,8 +24,8 @@ export function tierFor(amount: number): number {
   return t;
 }
 
-export function lineFor(tier: number, seed: number): string {
-  const lines = TIERS[Math.max(0, tier)].lines;
+export function lineFor(tier: number, seed: number, secret = false): string {
+  const lines = secret ? SECRET_LINES[Math.max(0, tier)] : TIERS[Math.max(0, tier)].lines;
   return lines[Math.abs(seed) % lines.length];
 }
 

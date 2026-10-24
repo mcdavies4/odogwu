@@ -3,7 +3,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { supabaseBrowser } from "@/lib/supabase";
 import { naira, compactNaira } from "@/lib/money";
-import { crossedMilestone, lineFor, tierFor } from "@/lib/hype";
+import { crossedMilestone, displayName, lineFor, SECRET_LABEL, tierFor } from "@/lib/hype";
 import { chime, disableSound, enableSound, horn, swish } from "@/lib/wallSound";
 import { FlutterNote } from "./FlutterNote";
 import { NoteImg } from "./Note";
@@ -121,7 +121,7 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee,
     const cur = current.current;
     if (cur && cur.name === name) {
       const upgraded = tier > cur.tier;
-      const updated = { ...cur, amount, tier, line: upgraded ? lineFor(tier, counter.current++) : cur.line };
+      const updated = { ...cur, amount, tier, line: upgraded ? lineFor(tier, counter.current++, name === SECRET_LABEL) : cur.line };
       current.current = updated;
       setCallout(updated);
       if (upgraded && soundRef.current) chime(tier);
@@ -129,7 +129,7 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee,
       hideTimer.current = setTimeout(showNext, CALLOUT_MS);
       return;
     }
-    const entry: Callout = { key: counter.current++, name, amount, tier, line: lineFor(tier, counter.current) };
+    const entry: Callout = { key: counter.current++, name, amount, tier, line: lineFor(tier, counter.current, name === SECRET_LABEL) };
     const i = queue.current.findIndex((q) => q.name === name);
     if (i >= 0) queue.current[i] = { ...entry, key: queue.current[i].key };
     else queue.current.push(entry);
@@ -167,7 +167,7 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee,
       const k = s.guest_name.trim().toLowerCase();
       const b = bursts.current.get(k);
       const streak = b && now - b.last < BURST_WINDOW_MS ? b.amount + s.amount_naira : s.amount_naira;
-      bursts.current.set(k, { name: s.guest_name.trim(), amount: streak, last: now });
+      bursts.current.set(k, { name: displayName(s.guest_name), amount: streak, last: now });
     }
     setSprays((prev) => [...prev, ...fresh]);
     setFalling((prev) => {
@@ -226,7 +226,7 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee,
   // ---------- Demo party: fake guests spraying in bursts ----------
   useEffect(() => {
     if (!demo) return;
-    const guests = ["Aunty Ngozi", "Chief Emeka", "Tunde", "Amaka", "Uncle Bayo", "Kemi", "Ifeanyi", "Big Segun", "Funmi", "Obinna"];
+    const guests = ["Aunty Ngozi", "Chief Emeka", "Tunde", "Amaka", "Uncle Bayo", "Kemi", "Ifeanyi", "Big Segun", "Funmi", "Obinna", "Anonymous", "Anonymous"];
     let id = 1;
     let alive = true;
     const timers: ReturnType<typeof setTimeout>[] = [];
@@ -268,7 +268,7 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee,
     const m = new Map<string, { name: string; amt: number }>();
     for (const s of sprays) {
       const k = s.guest_name.trim().toLowerCase();
-      const cur = m.get(k) ?? { name: s.guest_name.trim(), amt: 0 };
+      const cur = m.get(k) ?? { name: displayName(s.guest_name), amt: 0 };
       cur.amt += s.amount_naira;
       m.set(k, cur);
     }

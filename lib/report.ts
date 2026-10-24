@@ -52,7 +52,8 @@ export type GuestLine = {
   gift: number; // naira paid for spray packs (all of it goes to the celebrant)
   sprayed: number; // naira actually swiped onto the wall
   packs: number;
-  email: string | null; // only if the guest typed one
+  email: string | null; // only if the guest typed one (never shown for anonymous guests)
+  anonymous: boolean; // sprayed as "Secret Odogwu"; name (if any) is private to the celebrant
   first: string;
   last: string;
 };
@@ -65,7 +66,10 @@ export type Report = {
   pending: number; // packs started but not paid (e.g. bank transfer not arrived)
 };
 
-type PayRow = { id: string; guest_name: string; guest_email: string; amount_kobo: number; status: string; paid_at: string | null; created_at: string };
+type PayRow = {
+  id: string; guest_name: string; guest_email: string; amount_kobo: number; status: string;
+  paid_at: string | null; created_at: string; anonymous?: boolean; private_name?: string | null;
+};
 type SprayRow = { payment_id: string; amount_naira: number };
 
 const isPlaceholderEmail = (e: string) => /^guest\+odg_/i.test(e);
@@ -75,7 +79,7 @@ export async function buildReport(eventId: string): Promise<Report> {
   const [payments, sprays] = await Promise.all([
     fetchAll<PayRow>((f, t) =>
       db.from("payments")
-        .select("id,guest_name,guest_email,amount_kobo,status,paid_at,created_at")
+        .select("*") // "*" so this keeps working before or after anonymous.sql is installed
         .eq("event_id", eventId)
         .neq("status", "failed")
         .order("created_at", { ascending: true })
@@ -93,14 +97,17 @@ export async function buildReport(eventId: string): Promise<Report> {
   let pending = 0;
   for (const p of payments) {
     if (p.status !== "success") { pending++; continue; }
-    const name = p.guest_name.trim();
-    const k = name.toLowerCase();
+    const anonymous = Boolean(p.anonymous) || p.guest_name.trim() === "Anonymous";
+    const privateName = (p.private_name ?? "").trim();
+    // Named anonymous guests each get their own row; nameless ones share one "Anonymous" row.
+    const name = anonymous ? privateName || "Anonymous" : p.guest_name.trim();
+    const k = `${anonymous ? "anon:" : ""}${name.toLowerCase()}`;
     const when = p.paid_at ?? p.created_at;
-    const line = byGuest.get(k) ?? { name, gift: 0, sprayed: 0, packs: 0, email: null, first: when, last: when };
+    const line = byGuest.get(k) ?? { name, gift: 0, sprayed: 0, packs: 0, email: null, anonymous, first: when, last: when };
     line.gift += Number(p.amount_kobo) / 100;
     line.sprayed += sprayedByPayment.get(p.id) ?? 0;
     line.packs += 1;
-    if (!line.email && p.guest_email && !isPlaceholderEmail(p.guest_email)) line.email = p.guest_email;
+    if (!anonymous && !line.email && p.guest_email && !isPlaceholderEmail(p.guest_email)) line.email = p.guest_email;
     if (when < line.first) line.first = when;
     if (when > line.last) line.last = when;
     byGuest.set(k, line);

@@ -15,7 +15,8 @@ export async function POST(req: Request) {
     const used = p.status === "success" ? await sprayedSoFar(p.id) : 0;
     return NextResponse.json({
       status: p.status,
-      guestName: p.guest_name,
+      guestName: p.guest_name === "Anonymous" ? "" : p.guest_name,
+      anonymous: p.guest_name === "Anonymous",
       totalNaira: total,
       remainingNaira: total - used,
     });

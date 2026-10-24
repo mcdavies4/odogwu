@@ -11,6 +11,7 @@ export function GuestPay({ slug, celebrant, feePct }: { slug: string; celebrant:
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resume, setResume] = useState<string | null>(null);
+  const [anonymous, setAnonymous] = useState(false);
 
   useEffect(() => {
     try {
@@ -21,7 +22,7 @@ export function GuestPay({ slug, celebrant, feePct }: { slug: string; celebrant:
 
   const amount = custom ? Number(custom) : pack;
   const fee = Math.ceil(amount * (feePct / 100));
-  const valid = name.trim().length > 0 && amount >= MIN_PACK_NAIRA && amount % 100 === 0;
+  const valid = (anonymous || name.trim().length > 0) && amount >= MIN_PACK_NAIRA && amount % 100 === 0;
 
   async function pay(e: React.FormEvent) {
     e.preventDefault();
@@ -32,12 +33,12 @@ export function GuestPay({ slug, celebrant, feePct }: { slug: string; celebrant:
       const r = await fetch("/api/pay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, guestName: name, guestEmail: email, packNaira: amount }),
+        body: JSON.stringify({ slug, guestName: name, guestEmail: email, packNaira: amount, anonymous }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
       try {
-        localStorage.setItem("odogwu:name", name.trim());
+        if (!anonymous) localStorage.setItem("odogwu:name", name.trim());
         localStorage.setItem(`odogwu:ref:${slug}`, d.reference);
       } catch {}
       window.location.href = d.url;
@@ -55,8 +56,20 @@ export function GuestPay({ slug, celebrant, feePct }: { slug: string; celebrant:
         </Link>
       )}
 
-      <label className="field"><span>Your name</span>
-        <input className="input" required maxLength={40} placeholder="Shows on the spray wall" value={name} onChange={(e) => setName(e.target.value)} />
+      <label className="anon-toggle">
+        <input type="checkbox" role="switch" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} />
+        <span className="anon-track" aria-hidden="true"><span className="anon-thumb" /></span>
+        <span className="anon-text">
+          <strong>Spray anonymously 🤫</strong>
+          <small>You&apos;ll show on the wall as &quot;Secret Odogwu&quot;. Your name won&apos;t appear on screen.</small>
+        </span>
+      </label>
+
+      <label className="field"><span>{anonymous ? "Your name (optional)" : "Your name"}</span>
+        <input className="input" required={!anonymous} maxLength={40}
+          placeholder={anonymous ? "Only the celebrant will see it" : "Shows on the spray wall"}
+          value={name} onChange={(e) => setName(e.target.value)} />
+        {anonymous && <small>Only {celebrant} sees it, in their private thank-you list. Leave it blank to stay completely anonymous.</small>}
       </label>
 
       <fieldset style={{ border: 0, padding: 0, margin: 0 }}>

@@ -24,10 +24,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
 
   const r = await buildReport(ev.id);
   const rows: (string | number | null)[][] = [
-    ["Position", "Guest", "Gift (NGN)", "Sprayed on screen (NGN)", "Spray packs", "Email", "First spray (Lagos time)", "Last spray (Lagos time)"],
-    ...r.guests.map((g, i) => [i + 1, g.name, g.gift, g.sprayed, g.packs, g.email, lagosTime(g.first), lagosTime(g.last)]),
+    ["Position", "Guest", "Anonymous", "Gift (NGN)", "Sprayed on screen (NGN)", "Spray packs", "Email", "First spray (Lagos time)", "Last spray (Lagos time)"],
+    ...r.guests.map((g, i) => [i + 1, g.name, g.anonymous ? "Yes (keep private)" : "", g.gift, g.sprayed, g.packs, g.email, lagosTime(g.first), lagosTime(g.last)]),
     [],
-    ["", "TOTAL", r.total, r.sprayed, r.packs, "", "", ""],
+    ["", "TOTAL", "", r.total, r.sprayed, r.packs, "", "", ""],
   ];
   const csv = "﻿" + rows.map((row) => row.map(cell).join(",")).join("\r\n");
   const file = `${ev.slug}-spray-report.csv`;

@@ -130,3 +130,8 @@ On the host dashboard, tap **Spray report**. It lists every guest who sprayed, w
 - **Download spreadsheet** for Excel or Google Sheets (safe against formula tricks in guest names).
 - **Print or save as PDF** for a clean white keepsake copy to send the couple.
 Totals read every record, so they stay correct for very big parties (thousands of notes).
+
+## Anonymous spraying
+Guests can switch on **Spray anonymously**. They appear on the wall and leaderboard as "Secret Odogwu 🤫", and their name never reaches the screen or anyone's phone. They can optionally leave their name for the celebrant's private spray report.
+
+**One-time setup:** run `supabase/anonymous.sql` in Supabase → SQL Editor. (Until you do, anonymous sprays still work and stay anonymous; the optional private name just isn't saved.)
