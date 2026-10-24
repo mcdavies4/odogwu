@@ -312,3 +312,29 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 /* Verified payee on the wall: guests can check a table QR hasn't been swapped */
 .wall-side .payee { font-size: 14px; line-height: 1.4; color: var(--lace-dim); margin-top: -10px; }
 .wall-side .payee strong { color: var(--lace); }
+
+/* Spray report */
+.report-stats { grid-template-columns: repeat(2, 1fr); }
+@media (min-width: 760px) { .report-stats { grid-template-columns: repeat(4, 1fr); } }
+.report-stats .stat b { font-size: 22px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.report-table .num { text-align: right; }
+.report-table td.who { font-weight: 700; text-transform: none; }
+.report-table tfoot td { font-weight: 800; border-top: 2px solid var(--gold); border-bottom: 0; }
+.print-only { display: none; }
+
+@media print {
+  :root { --wine: #fff; --plum: #f6f1f4; --lace: #1b0a15; --lace-dim: #5c4a55; --line: #d9cfd5; --gold: #9a6b00; color-scheme: light; }
+  html { background: #fff !important; }
+  .report-table td:nth-child(5) { white-space: nowrap; }
+  @page { margin: 14mm; }
+  body { background: #fff !important; color: #1b0a15; font-size: 12px; }
+  .no-print, .topbar { display: none !important; }
+  .print-only { display: flex; }
+  .report-brand { align-items: center; gap: 8px; font-family: var(--display); font-weight: 800; font-size: 14px; margin-bottom: 8px; }
+  .report-brand svg { width: 22px; height: 22px; }
+  .wrap { max-width: none; padding: 0; }
+  .stat { border: 1px solid var(--line); }
+  .table-wrap { overflow: visible; }
+  .visits th, .visits td { padding: 6px 8px; white-space: normal; }
+  .visits tr { break-inside: avoid; }
+}

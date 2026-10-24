@@ -124,3 +124,9 @@ What's built in:
 3. Make `ADMIN_KEY` at least 20 random characters.
 4. Never paste the Supabase service key or Paystack secret key into chat, email or code. If one ever leaks, create a new one and update Vercel.
 5. Tell hosts to show the spray wall on screen: its QR code is always genuine, and it shows the bank-verified name guests should see before paying.
+
+## Spray report for the celebrant
+On the host dashboard, tap **Spray report**. It lists every guest who sprayed, what they gave, how many packs, when, and their email if they gave one, sorted from the biggest sprayer down.
+- **Download spreadsheet** for Excel or Google Sheets (safe against formula tricks in guest names).
+- **Print or save as PDF** for a clean white keepsake copy to send the couple.
+Totals read every record, so they stay correct for very big parties (thousands of notes).

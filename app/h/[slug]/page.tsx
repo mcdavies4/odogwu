@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase-server";
 import { headers } from "next/headers";
-import { allow, clientId, safeEqual } from "@/lib/security";
+import { clientId } from "@/lib/security";
+import { buildReport, hostEvent } from "@/lib/report";
 import { siteUrl } from "@/lib/events";
 import { naira } from "@/lib/money";
 import { Logo } from "@/components/Note";
@@ -26,11 +27,8 @@ export default async function HostDashboard({
   const { slug } = await params;
   const { key } = await searchParams;
   const db = supabaseAdmin();
-  const { data: ev } = await db.from("events").select("*").eq("slug", slug).maybeSingle();
-  if (!ev || !key || !safeEqual(key, ev.host_key)) {
-    await allow(`hostfail:${clientId(await headers())}`, 600, 30);
-    notFound();
-  }
+  const ev = await hostEvent(slug, key, clientId(await headers()));
+  if (!ev || !key) notFound();
 
   const { data: payments } = await db
     .from("payments")
@@ -40,9 +38,10 @@ export default async function HostDashboard({
     .order("created_at", { ascending: false })
     .limit(200);
 
-  const paid = (payments as Payment[] | null ?? []).filter((p) => p.status === "success");
-  const totalNaira = paid.reduce((s, p) => s + Number(p.amount_kobo) / 100, 0);
-  const guests = new Set(paid.map((p) => p.guest_name.toLowerCase())).size;
+  // Totals come from the full report so they stay right past 1,000 sprays.
+  const report = await buildReport(ev.id);
+  const totalNaira = report.total;
+  const guests = report.guests.length;
   const guestUrl = `${siteUrl()}/e/${ev.slug}`;
 
   return (
@@ -76,10 +75,11 @@ export default async function HostDashboard({
           <ToggleOpen slug={ev.slug} hostKey={key} open={ev.is_open} />
         </div>
         <p className="small muted">Put the spray wall on a projector or TV. It updates live as guests spray.</p>
+        <Link className="btn btn-ghost btn-block" href={`/h/${ev.slug}/report?key=${key}`}>Spray report: who sprayed and how much</Link>
         <InstallButton className="btn btn-ghost btn-block" label="Install Odogwu on this phone" />
 
         <section className="stack">
-          <h2 style={{ fontSize: 20 }}>Spray packs</h2>
+          <h2 style={{ fontSize: 20 }}>Latest spray packs</h2>
           {(payments?.length ?? 0) === 0 ? (
             <p className="muted">No one has sprayed yet. Share the QR code to get things going.</p>
           ) : (
