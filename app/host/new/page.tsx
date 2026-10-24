@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Logo } from "@/components/Note";
+import { BankPicker } from "@/components/BankPicker";
 
 type Bank = { name: string; code: string };
 
@@ -80,12 +81,10 @@ export default function NewCelebration() {
 
           <div className="panel stack">
             <h2 style={{ fontSize: 20 }}>Where should the money go?</h2>
-            <label className="field"><span>Bank</span>
-              <select className="input" required value={form.bankCode} onChange={set("bankCode")}>
-                <option value="">{banks.length ? "Choose your bank" : "Loading banks…"}</option>
-                {banks.map((b) => <option key={b.code} value={b.code}>{b.name}</option>)}
-              </select>
-            </label>
+            <div className="field"><span>Bank</span>
+              <BankPicker banks={banks} loading={banks.length === 0} value={form.bankCode}
+                onChange={(code) => setForm((f) => ({ ...f, bankCode: code }))} />
+            </div>
             <label className="field"><span>Account number</span>
               <input className="input" required inputMode="numeric" autoComplete="off" placeholder="10 digits" value={form.accountNumber} onChange={set("accountNumber")} />
               <small>{resolving ? "Checking with your bank…" : "Payouts land here the next working day."}</small>
