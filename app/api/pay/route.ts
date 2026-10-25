@@ -6,6 +6,7 @@ import { feeKobo, MAX_PACK_NAIRA, MIN_PACK_NAIRA } from "@/lib/money";
 import { allow, cleanText, clientId, nameProblem, tooMany } from "@/lib/security";
 import { ANONYMOUS } from "@/lib/hype";
 import { flagOf, isCountry } from "@/lib/countries";
+import { ABROAD_ENABLED } from "@/lib/flags";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -18,7 +19,7 @@ export async function POST(req: Request) {
   const typedName = cleanText(body.guestName, 40);
   // Anonymous guests appear as "Anonymous" everywhere public; their name (if any) stays private.
   // Guests spraying from abroad get their country's flag next to their name on the wall.
-  const from = isCountry(body.from) ? body.from : null;
+  const from = ABROAD_ENABLED && isCountry(body.from) ? body.from : null;
   const guestName = anonymous ? ANONYMOUS : from ? `${typedName} ${flagOf(from)}` : typedName;
   const packNaira = Math.round(Number(body.packNaira));
   let guestEmail = cleanText(body.guestEmail, 120).toLowerCase();

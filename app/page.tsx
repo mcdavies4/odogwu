@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
+import { ABROAD_ENABLED } from "@/lib/flags";
 import { FeesSection } from "@/components/FeesSection";
 import { Logo } from "@/components/Note";
 import { FlutterNote } from "@/components/FlutterNote";
@@ -84,7 +85,7 @@ export default function Home() {
           <p><strong>What does it cost?</strong> <span className="muted">Creating a celebration is free. Guests pay a service fee of 5% + ₦100 on top of each spray pack, and the celebrant receives the full pack value. <a href="#fees">See how fees work</a>.</span></p>
           <p><strong>What if a guest doesn&apos;t spray all their notes?</strong> <span className="muted">It&apos;s still the celebrant&apos;s. The pack is a gift the moment it&apos;s paid; spraying is the fun part.</span></p>
           <p><strong>Can guests spray anonymously?</strong> <span className="muted">Yes. They show on the wall as &quot;Secret Odogwu 🤫&quot;. If they want, they can leave their name for the celebrant&apos;s private thank-you list only.</span></p>
-          <p><strong>Can family abroad spray?</strong> <span className="muted">Yes. They open the guest link from anywhere, pick their country and pay with a foreign card. Their flag shows next to their name on the wall, and they can watch it live.</span></p>
+{ABROAD_ENABLED &&           <p><strong>Can family abroad spray?</strong> <span className="muted">Yes. They open the guest link from anywhere, pick their country and pay with a foreign card. Their flag shows next to their name on the wall, and they can watch it live.</span></p>}
           <p><strong>Do we get anything to keep?</strong> <span className="muted">Every celebration gets a spray report of who gave what, and a 20-second highlight reel to post. <a href="/demo/recap">See an example reel</a>.</span></p>
           <p><strong>Run an event centre?</strong> <span className="muted">Partner with us: your hall gets its own dashboard and earns a share of every spray pack at your events. <a href="/contact">Get in touch</a>.</span></p>
           <p><strong>When does the money arrive?</strong> <span className="muted">The next working day. A Saturday party settles on Monday.</span></p>

@@ -144,7 +144,7 @@ Guests can switch on **Spray anonymously**. They appear on the wall and leaderbo
 |---|---|
 | Terms, Privacy, Help pages | `/terms`, `/privacy`, `/contact`, linked from every footer. Have a Nigerian lawyer review them before launch. |
 | Printable QR table cards | Host dashboard → **Table cards** (6 per A4, colour or ink-saver) |
-| Spray from abroad | Guest page → "I'm spraying from abroad". Flag shows on the wall. Turn on **international payments** in Paystack (Settings → Preferences). |
+| Spray from abroad | **Off until you set `NEXT_PUBLIC_ABROAD_ENABLED=true`** in Vercel and redeploy. Only do that after Paystack approves international payments. Then the guest page shows "I'm spraying from abroad" and flags appear on the wall. |
 | Now dancing | Host dashboard → **Now dancing**. Shows on the wall and guests' phones within a few seconds. |
 | "I sprayed" share card | Guests get it after spraying; share to status or download |
 | Highlight reel | Host dashboard → **Highlight reel**: plays, and saves as a video. Example: `/demo/recap` |

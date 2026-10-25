@@ -16,6 +16,7 @@ import { RememberHost } from "@/components/MyCelebrations";
 import { NowDancing } from "@/components/NowDancing";
 import { ThemePicker } from "@/components/ThemePicker";
 import { CopyLink } from "@/components/CopyLink";
+import { ABROAD_ENABLED } from "@/lib/flags";
 
 export const dynamic = "force-dynamic";
 export const metadata = { robots: { index: false } };
@@ -103,7 +104,7 @@ export default async function HostDashboard({
           </div>
         )}
 
-        <section className="panel stack">
+        {ABROAD_ENABLED && <section className="panel stack">
           <div>
             <h2 style={{ fontSize: 20 }}>✈️ Family abroad can spray too</h2>
             <p className="small muted">
@@ -112,7 +113,7 @@ export default async function HostDashboard({
             </p>
           </div>
           <CopyLink label="Guest link" url={guestUrl} />
-        </section>
+        </section>}
 
         <InstallButton className="btn btn-ghost btn-block" label="Install Odogwu on this phone" />
 

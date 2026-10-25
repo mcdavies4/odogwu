@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { MIN_PACK_NAIRA, PACKS_NAIRA, naira, compactNaira, serviceFee } from "@/lib/money";
 import { COUNTRIES, flagOf } from "@/lib/countries";
+import { ABROAD_ENABLED } from "@/lib/flags";
 
 export function GuestPay({ slug, celebrant, feePct, feeFlat }: { slug: string; celebrant: string; feePct: number; feeFlat: number }) {
   const [name, setName] = useState("");
@@ -21,7 +22,7 @@ export function GuestPay({ slug, celebrant, feePct, feeFlat }: { slug: string; c
       setName(localStorage.getItem("odogwu:name") || "");
       setResume(localStorage.getItem(`odogwu:ref:${slug}`));
       const savedFrom = localStorage.getItem("odogwu:from");
-      if (savedFrom) { setAbroad(true); setFrom(savedFrom); }
+      if (savedFrom && ABROAD_ENABLED) { setAbroad(true); setFrom(savedFrom); }
     } catch {}
   }, [slug]);
 
@@ -78,15 +79,15 @@ export function GuestPay({ slug, celebrant, feePct, feeFlat }: { slug: string; c
         {anonymous && <small>Only {celebrant} sees it, in their private thank-you list. Leave it blank to stay completely anonymous.</small>}
       </label>
 
-      <label className="anon-toggle">
+      {ABROAD_ENABLED && <label className="anon-toggle">
         <input type="checkbox" role="switch" checked={abroad} onChange={(e) => setAbroad(e.target.checked)} />
         <span className="anon-track" aria-hidden="true"><span className="anon-thumb" /></span>
         <span className="anon-text">
           <strong>I&apos;m spraying from abroad ✈️</strong>
           <small>Not at the party? Spray from wherever you are. {anonymous ? "Your flag stays hidden while you're anonymous." : "Your flag shows next to your name."}</small>
         </span>
-      </label>
-      {abroad && (
+      </label>}
+      {ABROAD_ENABLED && abroad && (
         <div className="panel stack abroad-panel">
           <label className="field"><span>Where are you?</span>
             <select className="input" value={from} onChange={(e) => setFrom(e.target.value)} required>
