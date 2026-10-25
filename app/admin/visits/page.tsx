@@ -48,7 +48,10 @@ export default async function Visits({ searchParams }: { searchParams: Promise<{
 
   return (
     <>
-      <header className="topbar"><Link href="/" className="brand"><Logo />Odogwu</Link></header>
+      <header className="topbar">
+        <Link href="/" className="brand"><Logo />Odogwu</Link>
+        <Link href={`/admin/venues?key=${encodeURIComponent(key!)}`} className="btn btn-ghost" style={{ minHeight: 44 }}>Venue partners</Link>
+      </header>
       <main className="wrap wrap-wide stack">
         <h1 style={{ fontSize: 30 }}>Who opened the demo</h1>
         {error && <div className="error">Couldn&apos;t load visits. Run supabase/demo-visits.sql in Supabase first.</div>}

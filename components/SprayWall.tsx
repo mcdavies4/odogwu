@@ -3,10 +3,12 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { supabaseBrowser } from "@/lib/supabase";
 import { naira, compactNaira } from "@/lib/money";
-import { crossedMilestone, displayName, lineFor, SECRET_LABEL, tierFor } from "@/lib/hype";
+import { crossedMilestone, displayName, kindOf, lineFor, tierFor } from "@/lib/hype";
 import { chime, disableSound, enableSound, horn, swish } from "@/lib/wallSound";
 import { FlutterNote } from "./FlutterNote";
 import { NoteImg } from "./Note";
+import { useLive } from "@/lib/useLive";
+import type { ThemeId } from "@/lib/themes";
 
 export type Spray = { id: number; guest_name: string; amount_naira: number; created_at: string };
 type Falling = { key: number; amount: number; left: number; delay: number };
@@ -81,9 +83,14 @@ const Rain = memo(function Rain({ items }: { items: { key: number; amount: numbe
   );
 });
 
-export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee, demo = false, stress = 0 }: {
+export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee, demo = false, stress = 0, slug, theme, nowDancing, venueName, open = true }: {
   eventId: string; title: string; celebrant: string; guestUrl: string; initial: Spray[]; payee?: string; demo?: boolean; stress?: number;
+  slug?: string; theme?: ThemeId; nowDancing?: string | null; venueName?: string | null; open?: boolean;
 }) {
+  // Who's dancing, the theme and open/closed update live from the host's dashboard.
+  const live = useLive(demo ? null : slug ?? null, { open, nowDancing: nowDancing ?? null, theme: theme ?? "classic" }, 4000);
+  const [demoDancing, setDemoDancing] = useState<string | null>(demo ? nowDancing ?? null : null);
+  const dancing = demo ? demoDancing : live.nowDancing;
   const [sprays, setSprays] = useState<Spray[]>(initial);
   const [falling, setFalling] = useState<Falling[]>([]);
   const [callout, setCallout] = useState<Callout | null>(null);
@@ -121,7 +128,7 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee,
     const cur = current.current;
     if (cur && cur.name === name) {
       const upgraded = tier > cur.tier;
-      const updated = { ...cur, amount, tier, line: upgraded ? lineFor(tier, counter.current++, name === SECRET_LABEL) : cur.line };
+      const updated = { ...cur, amount, tier, line: upgraded ? lineFor(tier, counter.current++, kindOf(name)) : cur.line };
       current.current = updated;
       setCallout(updated);
       if (upgraded && soundRef.current) chime(tier);
@@ -129,7 +136,7 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee,
       hideTimer.current = setTimeout(showNext, CALLOUT_MS);
       return;
     }
-    const entry: Callout = { key: counter.current++, name, amount, tier, line: lineFor(tier, counter.current, name === SECRET_LABEL) };
+    const entry: Callout = { key: counter.current++, name, amount, tier, line: lineFor(tier, counter.current, kindOf(name)) };
     const i = queue.current.findIndex((q) => q.name === name);
     if (i >= 0) queue.current[i] = { ...entry, key: queue.current[i].key };
     else queue.current.push(entry);
@@ -226,7 +233,7 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee,
   // ---------- Demo party: fake guests spraying in bursts ----------
   useEffect(() => {
     if (!demo) return;
-    const guests = ["Aunty Ngozi", "Chief Emeka", "Tunde", "Amaka", "Uncle Bayo", "Kemi", "Ifeanyi", "Big Segun", "Funmi", "Obinna", "Anonymous", "Anonymous"];
+    const guests = ["Aunty Ngozi", "Chief Emeka", "Tunde", "Amaka", "Uncle Bayo", "Kemi", "Ifeanyi", "Big Segun", "Funmi", "Obinna", "Anonymous", "Anonymous", "Aunty Ngozi 🇬🇧", "Uche 🇺🇸", "Bisi 🇨🇦"];
     let id = 1;
     let alive = true;
     const timers: ReturnType<typeof setTimeout>[] = [];
@@ -300,6 +307,15 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee,
     }));
   }, [sprays]);
 
+  // ---------- Demo: rotate who's on the dance floor ----------
+  useEffect(() => {
+    if (!demo || stress) return;
+    const floor = ["The couple", "The bride's family", "The groom's friends", "Everybody!"];
+    let i = 0;
+    const iv = setInterval(() => { i = (i + 1) % floor.length; setDemoDancing(floor[i]); }, 15000);
+    return () => clearInterval(iv);
+  }, [demo, stress]);
+
   // ---------- Keep the projector laptop awake for the whole party ----------
   useEffect(() => {
     type Sentinel = { release: () => Promise<void> };
@@ -342,13 +358,20 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee,
   }
 
   return (
-    <div className={`wall pattern${milestone ? " wall-shake" : ""}`}>
+    <div className={`wall pattern${milestone ? " wall-shake" : ""}`} data-theme={live.theme}>
       <Pile items={pile} />
       <Rain items={falling} />
 
       <main className="wall-main">
         <h1>{title}</h1>
+        {venueName && <p className="wall-venue">at {venueName}</p>}
         {demo && <p className="muted">Demo party: these sprays are pretend.</p>}
+        {dancing && (
+          <div className="now-dancing" key={dancing} aria-live="polite">
+            <span className="nd-label">💃 Now dancing</span>
+            <span className="nd-who">{dancing}</span>
+          </div>
+        )}
 
         <div className="callout-zone" aria-live="polite">
           {callout && (
@@ -365,10 +388,14 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee,
       </main>
 
       <aside className="wall-side">
-        <div className="qr-box">
-          <QRCodeSVG value={guestUrl} size={120} bgColor="#fcefd9" fgColor="#2a0820" marginSize={0} />
-          <div>Scan to spray {celebrant}<small>{guestUrl.replace(/^https?:\/\//, "")}</small></div>
-        </div>
+        {live.open ? (
+          <div className="qr-box">
+            <QRCodeSVG value={guestUrl} size={120} bgColor="#fcefd9" fgColor="#2a0820" marginSize={0} />
+            <div>Scan to spray {celebrant}<small>{guestUrl.replace(/^https?:\/\//, "")}</small></div>
+          </div>
+        ) : (
+          <div className="qr-box closed">Spraying has closed. Thank you for the love! ❤️</div>
+        )}
         {payee && (
           <p className="payee">
             Money goes to <strong>{payee}</strong>. Check your phone shows the same name before you pay.

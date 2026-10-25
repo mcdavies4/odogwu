@@ -135,3 +135,23 @@ Totals read every record, so they stay correct for very big parties (thousands o
 Guests can switch on **Spray anonymously**. They appear on the wall and leaderboard as "Secret Odogwu 🤫", and their name never reaches the screen or anyone's phone. They can optionally leave their name for the celebrant's private spray report.
 
 **One-time setup:** run `supabase/anonymous.sql` in Supabase → SQL Editor. (Until you do, anonymous sprays still work and stay anonymous; the optional private name just isn't saved.)
+
+## New in this version
+
+**One-time setup:** run `supabase/features.sql` in Supabase → SQL Editor. Then add `THEME_PRICE_NAIRA` and `NEXT_PUBLIC_SUPPORT_EMAIL` in Vercel (see `.env.example`) and redeploy.
+
+| Feature | Where |
+|---|---|
+| Terms, Privacy, Help pages | `/terms`, `/privacy`, `/contact`, linked from every footer. Have a Nigerian lawyer review them before launch. |
+| Printable QR table cards | Host dashboard → **Table cards** (6 per A4, colour or ink-saver) |
+| Spray from abroad | Guest page → "I'm spraying from abroad". Flag shows on the wall. Turn on **international payments** in Paystack (Settings → Preferences). |
+| Now dancing | Host dashboard → **Now dancing**. Shows on the wall and guests' phones within a few seconds. |
+| "I sprayed" share card | Guests get it after spraying; share to status or download |
+| Highlight reel | Host dashboard → **Highlight reel**: plays, and saves as a video. Example: `/demo/recap` |
+| Venue partners | `/admin/venues?key=ADMIN_KEY` to add a venue; they get `/v/...` dashboard and a client link. Pay their share yourself, e.g. monthly. |
+| Premium wall themes | Host dashboard → **Wall theme**. One-off unlock via Paystack (to your own balance). Preview: `/demo/wall?theme=wedding` |
+
+**Privacy promise to keep:** the Privacy Policy says celebration records are deleted 24 months after the event. Do this once a year in Supabase:
+```sql
+delete from events where created_at < now() - interval '24 months';
+```

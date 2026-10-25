@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-server";
-import { initializeTransaction } from "@/lib/paystack";
+import { initializeTransaction, PaystackError } from "@/lib/paystack";
 import { makeReference } from "@/lib/ids";
 import { feeKobo, MAX_PACK_NAIRA, MIN_PACK_NAIRA } from "@/lib/money";
 import { allow, cleanText, clientId, nameProblem, tooMany } from "@/lib/security";
 import { ANONYMOUS } from "@/lib/hype";
+import { flagOf, isCountry } from "@/lib/countries";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -16,7 +17,9 @@ export async function POST(req: Request) {
   const anonymous = body.anonymous === true;
   const typedName = cleanText(body.guestName, 40);
   // Anonymous guests appear as "Anonymous" everywhere public; their name (if any) stays private.
-  const guestName = anonymous ? ANONYMOUS : typedName;
+  // Guests spraying from abroad get their country's flag next to their name on the wall.
+  const from = isCountry(body.from) ? body.from : null;
+  const guestName = anonymous ? ANONYMOUS : from ? `${typedName} ${flagOf(from)}` : typedName;
   const packNaira = Math.round(Number(body.packNaira));
   let guestEmail = cleanText(body.guestEmail, 120).toLowerCase();
 
@@ -74,11 +77,14 @@ export async function POST(req: Request) {
       platformChargeKobo: fee,
       // Paystack appends ?trxref=…&reference=… itself, so no query string here.
       callbackUrl: `${site}/e/${ev.slug}/spray`,
-      metadata: { event: ev.slug, guest_name: guestName, anonymous, pack_naira: packNaira },
+      metadata: { event: ev.slug, guest_name: guestName, anonymous, from, pack_naira: packNaira },
     });
     return NextResponse.json({ url: tx.authorization_url, reference });
   } catch (e) {
     await db.from("payments").update({ status: "failed" }).eq("reference", reference);
-    return NextResponse.json({ error: (e as Error).message }, { status: 502 });
+    console.error("pay init failed", e);
+    // Paystack's own messages are written for people; network errors are not.
+    const msg = e instanceof PaystackError ? e.message : "Couldn't reach the payment provider. Please try again in a moment.";
+    return NextResponse.json({ error: msg }, { status: 502 });
   }
 }

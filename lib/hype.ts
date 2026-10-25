@@ -10,6 +10,13 @@ const SECRET_LINES = [
   ["the whole hall wants to know who! 👑", "a legend in disguise!"],
 ];
 
+const ABROAD_LINES = [
+  ["is spraying all the way from abroad! ✈️", "distance is not a barrier!"],
+  ["the love crossed the ocean! 🌍", "sending it from abroad! ✈️"],
+  ["diaspora don land! 👑", "abroad money is landing!"],
+  ["the whole diaspora is shaking! 👑", "a global Odogwu!"],
+];
+
 // What the wall says about a guest's spraying streak. Grows with the amount.
 export const TIERS = [
   { min: 1_000, lines: ["is spraying!", "is showing love!", "don land!"] },
@@ -24,8 +31,17 @@ export function tierFor(amount: number): number {
   return t;
 }
 
-export function lineFor(tier: number, seed: number, secret = false): string {
-  const lines = secret ? SECRET_LINES[Math.max(0, tier)] : TIERS[Math.max(0, tier)].lines;
+export type GuestKind = "normal" | "secret" | "abroad";
+
+export function kindOf(name: string): GuestKind {
+  if (name === SECRET_LABEL || name.trim() === ANONYMOUS) return "secret";
+  return /[\u{1F1E6}-\u{1F1FF}]{2}$/u.test(name.trim()) ? "abroad" : "normal";
+}
+
+export function lineFor(tier: number, seed: number, kind: GuestKind | boolean = "normal"): string {
+  const k: GuestKind = kind === true ? "secret" : kind === false ? "normal" : kind;
+  const t = Math.max(0, tier);
+  const lines = k === "secret" ? SECRET_LINES[t] : k === "abroad" ? ABROAD_LINES[t] : TIERS[t].lines;
   return lines[Math.abs(seed) % lines.length];
 }
 

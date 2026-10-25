@@ -24,6 +24,12 @@ export function feeKobo(packNaira: number, pct = feePercent(), flat = feeFlat())
   return serviceFee(packNaira, pct, flat) * 100;
 }
 
+/** One-off price to unlock premium wall themes for a celebration. 0 makes them free (e.g. during a pilot). */
+export function themePrice(): number {
+  const n = Number(process.env.THEME_PRICE_NAIRA ?? 5000);
+  return Number.isFinite(n) && n >= 0 && n <= 1_000_000 ? Math.round(n) : 5000;
+}
+
 export function naira(n: number): string {
   return "₦" + Math.round(n).toLocaleString("en-NG");
 }

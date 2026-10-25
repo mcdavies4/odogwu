@@ -1,4 +1,7 @@
-/** Shared footer: makes it plain that Odogwu never holds anyone's money. */
+import Link from "next/link";
+import { COMPANY, SUPPORT_EMAIL } from "@/lib/contact";
+
+/** Shared footer: makes it plain that Odogwu never holds anyone's money, and how to get help. */
 export function Footer() {
   return (
     <footer className="footer">
@@ -12,7 +15,16 @@ export function Footer() {
         Every payment is processed by Paystack and paid straight into the celebrant&apos;s own bank account, usually the next
         working day. There&apos;s no Odogwu wallet or balance.
       </p>
-      <p className="footer-small">Odogwu by The 36th Solutions Ltd</p>
+      <nav className="footer-links" aria-label="Footer">
+        <Link href="/#fees">Fees</Link>
+        <Link href="/terms">Terms</Link>
+        <Link href="/privacy">Privacy</Link>
+        <Link href="/contact">Help</Link>
+      </nav>
+      <p className="footer-small">
+        Need help? <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
+        <br />Odogwu by {COMPANY}
+      </p>
     </footer>
   );
 }

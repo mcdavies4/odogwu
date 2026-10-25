@@ -4,12 +4,25 @@ import Link from "next/link";
 import { Note } from "./Note";
 import { FlutterNote } from "./FlutterNote";
 import { DENOMINATIONS, naira } from "@/lib/money";
+import { ShareCard } from "./ShareCard";
+import { useLive } from "@/lib/useLive";
 
 type Phase = "checking" | "pending" | "failed" | "ready" | "error";
 type Fly = { id: number; amount: number; left: number; top: number; width: number; flyX: number };
 type Spark = { id: number; x: number; y: number; sx: number; sy: number; color: string };
 
-export function SprayScreen({ slug, celebrant, reference }: { slug: string; celebrant: string; reference: string }) {
+export function SprayScreen({ slug, celebrant, reference, title, nowDancing = null }: {
+  slug: string; celebrant: string; reference: string; title: string; nowDancing?: string | null;
+}) {
+  const isDemo = reference === "demo";
+  const live = useLive(isDemo ? null : slug, { open: true, nowDancing, theme: "classic" }, 10000);
+  const wallHref = isDemo ? "/demo/wall" : `/e/${slug}/wall`;
+  const help = (
+    <p className="spray-help">
+      Need help? <a href="/contact">Contact us</a>
+      {!isDemo && reference && <> · Ref <code>{reference}</code></>}
+    </p>
+  );
   const [phase, setPhase] = useState<Phase>(reference ? "checking" : "error");
   const [message, setMessage] = useState<string | null>(reference ? null : "We couldn't find your spray pack.");
   const [guest, setGuest] = useState("");
@@ -143,6 +156,7 @@ export function SprayScreen({ slug, celebrant, reference }: { slug: string; cele
       <Centered>
         <h1 style={{ fontSize: 26 }}>Waiting for your payment</h1>
         <p className="muted">Paid by bank transfer? It can take a minute to arrive. Keep this page open and your notes will appear.</p>
+        {help}
       </Centered>
     );
   if (phase === "failed" || phase === "error")
@@ -151,6 +165,7 @@ export function SprayScreen({ slug, celebrant, reference }: { slug: string; cele
         <h1 style={{ fontSize: 26 }}>{phase === "failed" ? "That payment didn't go through" : "Something's missing"}</h1>
         <p className="muted">{message ?? "No money was taken for this pack. You can try again."}</p>
         <Link className="btn" href={`/e/${slug}`}>Buy a spray pack</Link>
+        {help}
       </Centered>
     );
 
@@ -160,6 +175,7 @@ export function SprayScreen({ slug, celebrant, reference }: { slug: string; cele
         <Note amount={1000} style={{ width: 220, transform: "rotate(-8deg)" }} />
         <h1 style={{ fontSize: 28 }}>You sprayed {naira(total)}!</h1>
         <p className="muted">{celebrant} will receive it in their bank the next working day.</p>
+        <ShareCard celebrant={celebrant} title={title} amount={total} />
         {reference === "demo" ? (
           <>
             <button className="btn btn-block" onClick={() => { setTotal(5000); setServerRemaining(5000); }}>Spray again</button>
@@ -169,12 +185,17 @@ export function SprayScreen({ slug, celebrant, reference }: { slug: string; cele
           <Link className="btn btn-block" href={`/e/${slug}`}>Buy another pack</Link>
         )}
         {fx}
+        {help}
       </Centered>
     );
   }
 
   return (
     <div className="spray-app">
+      <div>
+      {live.nowDancing && (
+        <div className="spray-dancing" key={live.nowDancing}>💃 On the floor: <strong>{live.nowDancing}</strong></div>
+      )}
       <div className="spray-head">
         <div>
           <div className="balance-label">Left to spray</div>
@@ -183,7 +204,9 @@ export function SprayScreen({ slug, celebrant, reference }: { slug: string; cele
         <div className="celebrant">
           <span className="small muted">Spraying</span>
           <strong>{celebrant}</strong>
+          <a className="watch-wall" href={wallHref} target="_blank" rel="noopener">📺 Watch the wall</a>
         </div>
+      </div>
       </div>
 
       <SwipeNote amount={denom} disabled={denom > remaining} onSpray={(rect, dx) => sprayWithFx(rect, dx)} />
@@ -203,6 +226,7 @@ export function SprayScreen({ slug, celebrant, reference }: { slug: string; cele
           onClick={() => sprayWithFx(document.querySelector(".note-live")?.getBoundingClientRect(), Math.random() * 60 - 30)}>
           Tap to spray {naira(denom)}
         </button>
+        {help}
       </div>
     </div>
   );

@@ -24,6 +24,11 @@ export default async function WallPage({ params }: { params: Promise<{ slug: str
       celebrant={ev.celebrant_name}
       guestUrl={`${siteUrl()}/e/${ev.slug}`}
       payee={ev.account_name}
+      slug={ev.slug}
+      theme={ev.theme}
+      nowDancing={ev.now_dancing}
+      venueName={ev.venue_name}
+      open={ev.is_open}
       initial={(data ?? []) as Spray[]}
     />
   );

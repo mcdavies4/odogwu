@@ -31,7 +31,7 @@ export default async function SprayPage({
 
   return (
     <Suspense>
-      <SprayScreen slug={ev.slug} celebrant={ev.celebrant_name} reference={reference} />
+      <SprayScreen slug={ev.slug} celebrant={ev.celebrant_name} reference={reference} title={ev.title} nowDancing={ev.now_dancing} />
     </Suspense>
   );
 }

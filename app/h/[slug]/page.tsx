@@ -5,13 +5,17 @@ import { supabaseAdmin } from "@/lib/supabase-server";
 import { headers } from "next/headers";
 import { clientId } from "@/lib/security";
 import { buildReport, hostEvent } from "@/lib/report";
-import { siteUrl } from "@/lib/events";
-import { naira } from "@/lib/money";
+import { getPublicEvent, siteUrl } from "@/lib/events";
+import { naira, themePrice } from "@/lib/money";
+import { themeOf } from "@/lib/themes";
 import { Logo } from "@/components/Note";
 import { ShareQR } from "@/components/ShareQR";
 import { ToggleOpen } from "@/components/ToggleOpen";
 import { InstallButton } from "@/components/InstallButton";
 import { RememberHost } from "@/components/MyCelebrations";
+import { NowDancing } from "@/components/NowDancing";
+import { ThemePicker } from "@/components/ThemePicker";
+import { CopyLink } from "@/components/CopyLink";
 
 export const dynamic = "force-dynamic";
 export const metadata = { robots: { index: false } };
@@ -41,9 +45,12 @@ export default async function HostDashboard({
 
   // Totals come from the full report so they stay right past 1,000 sprays.
   const report = await buildReport(ev.id);
+  const pub = await getPublicEvent(slug);
   const totalNaira = report.total;
   const guests = report.guests.length;
   const guestUrl = `${siteUrl()}/e/${ev.slug}`;
+  const k = encodeURIComponent(key);
+  const featuresReady = ev.theme !== undefined; // supabase/features.sql has been run
 
   return (
     <>
@@ -55,6 +62,7 @@ export default async function HostDashboard({
           <p className="muted">
             Paying out to {ev.account_name} · {ev.bank_name} ····{ev.account_last4}
           </p>
+          {pub?.venue_name && <p className="venue-tag" style={{ marginTop: 10 }}>📍 At {pub.venue_name}</p>}
         </div>
 
         <div className="ok small">
@@ -76,7 +84,36 @@ export default async function HostDashboard({
           <ToggleOpen slug={ev.slug} hostKey={key} open={ev.is_open} />
         </div>
         <p className="small muted">Put the spray wall on a projector or TV. It updates live as guests spray.</p>
-        <Link className="btn btn-ghost btn-block" href={`/h/${ev.slug}/report?key=${key}`}>Spray report: who sprayed and how much</Link>
+
+        <div className="tool-grid">
+          <Link className="tool" href={`/h/${ev.slug}/cards?key=${k}`}><span>🖨️</span><strong>Table cards</strong><small>Print QR cards for every table</small></Link>
+          <Link className="tool" href={`/h/${ev.slug}/report?key=${k}`}><span>📋</span><strong>Spray report</strong><small>Who sprayed and how much</small></Link>
+          <Link className="tool" href={`/h/${ev.slug}/recap?key=${k}`}><span>🎬</span><strong>Highlight reel</strong><small>A 20-second video to post</small></Link>
+          <Link className="tool" href={`/e/${ev.slug}/wall`} target="_blank"><span>📺</span><strong>Spray wall</strong><small>For the projector or TV</small></Link>
+        </div>
+
+        {featuresReady ? (
+          <>
+            <NowDancing slug={ev.slug} hostKey={key} initial={ev.now_dancing ?? null} />
+            <ThemePicker slug={ev.slug} hostKey={key} initial={themeOf(ev.theme)} unlocked={Boolean(ev.themes_unlocked)} price={themePrice()} />
+          </>
+        ) : (
+          <div className="panel small muted">
+            Now dancing and wall themes switch on once <code>supabase/features.sql</code> has been run in Supabase.
+          </div>
+        )}
+
+        <section className="panel stack">
+          <div>
+            <h2 style={{ fontSize: 20 }}>✈️ Family abroad can spray too</h2>
+            <p className="small muted">
+              Send them the guest link. They pick their country, pay with a foreign card, and their flag shows next to their
+              name on the wall. They can watch the wall live from the same page.
+            </p>
+          </div>
+          <CopyLink label="Guest link" url={guestUrl} />
+        </section>
+
         <InstallButton className="btn btn-ghost btn-block" label="Install Odogwu on this phone" />
 
         <section className="stack">

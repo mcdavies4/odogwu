@@ -16,6 +16,14 @@ export default function NewCelebration() {
   const [resolving, setResolving] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [venue, setVenue] = useState<{ slug: string; name: string } | null>(null);
+
+  // Opened from a venue partner's link (?venue=...): the celebration counts towards their share.
+  useEffect(() => {
+    const slug = new URLSearchParams(window.location.search).get("venue");
+    if (!slug || !/^[a-z0-9-]{2,60}$/.test(slug)) return;
+    fetch(`/api/venues/${slug}`).then((r) => (r.ok ? r.json() : null)).then((d) => d?.name && setVenue({ slug, name: d.name })).catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch("/api/banks").then((r) => r.json()).then((d) => setBanks(d.banks || [])).catch(() => setError("Couldn't load the bank list. Refresh to try again."));
@@ -48,7 +56,7 @@ export default function NewCelebration() {
     setError(null);
     setSaving(true);
     try {
-      const r = await fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      const r = await fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, venue: venue?.slug }) });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
       try {
@@ -68,6 +76,7 @@ export default function NewCelebration() {
       <main className="wrap">
         <form className="stack" onSubmit={submit}>
           <h1 style={{ fontSize: 32 }}>Create a celebration</h1>
+          {venue && <p className="venue-tag">📍 At {venue.name}</p>}
           <p className="muted">Guests will see these details when they scan your code.</p>
 
           <label className="field"><span>Celebration name</span>
@@ -102,7 +111,10 @@ export default function NewCelebration() {
           <button className="btn btn-block" disabled={!accountName || saving}>
             {saving ? "Creating…" : "Create celebration"}
           </button>
-          <p className="small muted center">Payments are processed and settled by Paystack. Odogwu never holds your money.</p>
+          <p className="small muted center">
+            Payments are processed and settled by Paystack. Odogwu never holds your money. By creating a celebration you agree to
+            our <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.
+          </p>
         </form>
       </main>
       <Footer />

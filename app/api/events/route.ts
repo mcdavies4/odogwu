@@ -4,6 +4,7 @@ import { createSubaccount, listBanks, resolveAccount } from "@/lib/paystack";
 import { makeHostKey, makeSlug } from "@/lib/ids";
 import { allow, cleanText, clientId, nameProblem, tooMany } from "@/lib/security";
 import { PaystackError } from "@/lib/paystack";
+import { venueBySlug } from "@/lib/venues";
 
 const clean = (v: unknown, max = 80) => cleanText(v, max);
 
@@ -44,7 +45,9 @@ export async function POST(req: Request) {
     const slug = makeSlug(celebrantName);
     const hostKey = makeHostKey();
 
-    const { error } = await supabaseAdmin().from("events").insert({
+    // Made through a venue partner's link? Tag it so the venue earns its share.
+    const venue = typeof body.venue === "string" ? await venueBySlug(body.venue) : null;
+    const row: Record<string, unknown> = {
       slug,
       title,
       celebrant_name: celebrantName,
@@ -55,7 +58,9 @@ export async function POST(req: Request) {
       account_name: resolved.account_name,
       account_last4: accountNumber.slice(-4),
       subaccount_code: sub.subaccount_code,
-    });
+    };
+    let { error } = await supabaseAdmin().from("events").insert(venue ? { ...row, venue_id: venue.id } : row);
+    if (error && venue) ({ error } = await supabaseAdmin().from("events").insert(row)); // features.sql not run yet
     if (error) throw new Error(`db: ${error.message}`);
 
     return NextResponse.json({ slug, hostKey });

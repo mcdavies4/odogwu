@@ -31,13 +31,18 @@ export type HostEvent = {
   account_last4: string;
   is_open: boolean;
   created_at: string;
+  // Added by supabase/features.sql (missing until it's run)
+  theme?: string | null;
+  themes_unlocked?: boolean | null;
+  now_dancing?: string | null;
+  venue_id?: string | null;
 };
 
 /** Returns the event only if `key` is its host key. Wrong keys are counted per connection. */
 export async function hostEvent(slug: string, key: string | undefined | null, who: string): Promise<HostEvent | null> {
   const { data: ev } = await supabaseAdmin()
     .from("events")
-    .select("id,slug,title,celebrant_name,event_date,host_key,bank_name,account_name,account_last4,is_open,created_at")
+    .select("*") // "*" so it works before and after features.sql
     .eq("slug", slug)
     .maybeSingle<HostEvent>();
   if (!ev || !key || !safeEqual(key, ev.host_key)) {
@@ -61,6 +66,7 @@ export type GuestLine = {
 export type Report = {
   total: number;
   sprayed: number;
+  notes: number; // individual notes swiped
   packs: number;
   guests: GuestLine[];
   pending: number; // packs started but not paid (e.g. bank transfer not arrived)
@@ -118,6 +124,7 @@ export async function buildReport(eventId: string): Promise<Report> {
     total: guests.reduce((s, g) => s + g.gift, 0),
     sprayed: guests.reduce((s, g) => s + g.sprayed, 0),
     packs: guests.reduce((s, g) => s + g.packs, 0),
+    notes: sprays.length,
     guests,
     pending,
   };

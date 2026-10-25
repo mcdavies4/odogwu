@@ -1,6 +1,6 @@
 // Odogwu service worker: makes the app installable and keeps the shell available
 // on patchy venue networks. Payments and spraying always go to the network.
-const CACHE = "odogwu-v2";
+const CACHE = "odogwu-v3";
 const NOTES = [50, 100, 200, 500, 1000].flatMap((v) => [`/notes/${v}-front.webp`, `/notes/${v}-back.webp`]);
 const SHELL = ["/", "/offline.html", "/icon.svg", "/manifest.webmanifest", ...NOTES];
 

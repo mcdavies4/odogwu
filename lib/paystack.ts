@@ -104,6 +104,28 @@ export async function initializeTransaction(input: {
   );
 }
 
+/** A payment to Odogwu itself (e.g. premium wall themes): no subaccount, so it settles to Odogwu's balance. */
+export async function initializeOwnTransaction(input: {
+  email: string;
+  amountKobo: number;
+  reference: string;
+  callbackUrl: string;
+  metadata: Record<string, unknown>;
+}) {
+  return ps<{ authorization_url: string; access_code: string; reference: string }>("/transaction/initialize", {
+    method: "POST",
+    body: JSON.stringify({
+      email: input.email,
+      amount: input.amountKobo,
+      currency: "NGN",
+      reference: input.reference,
+      callback_url: input.callbackUrl,
+      channels: ["card", "bank_transfer", "ussd", "bank"],
+      metadata: input.metadata,
+    }),
+  });
+}
+
 export type VerifiedTx = {
   status: string;
   reference: string;

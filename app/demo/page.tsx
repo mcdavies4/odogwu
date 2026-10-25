@@ -11,7 +11,7 @@ export default async function Demo({ searchParams }: { searchParams: Promise<{ r
   return (
     <>
       <TrackVisit page="spray" refTag={tag || undefined} />
-      <SprayScreen slug="demo" celebrant="the birthday girl" reference="demo" />
+      <SprayScreen slug="demo" celebrant="the birthday girl" reference="demo" title="Kemi's 30th birthday" nowDancing="The birthday girl" />
     </>
   );
 }
