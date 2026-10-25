@@ -58,18 +58,18 @@ export default function HostLogin() {
 
         {step === "email" && (
           <form className="stack" onSubmit={send}>
-            <p className="muted">Lost your private host link? Enter the email you used when you created your celebration and we&apos;ll send you a 6-digit code.</p>
+            <p className="muted">Lost your private host link? Enter the email you used when you created your celebration and we&apos;ll email you a sign-in link.</p>
             <label className="field"><span>Email</span>
               <input className="input" type="email" inputMode="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </label>
             {error && <div className="error small" role="alert">{error}</div>}
-            <button className="btn btn-block" disabled={busy}>{busy ? "Sending…" : "Send my code"}</button>
+            <button className="btn btn-block" disabled={busy}>{busy ? "Sending…" : "Email me a sign-in link"}</button>
           </form>
         )}
 
         {step === "code" && (
           <form className="stack" onSubmit={verify}>
-            <div className="ok small">If <strong>{email}</strong> has celebrations on Odogwu, a code is on its way. Check your spam folder too.</div>
+            <div className="ok small">If <strong>{email}</strong> has celebrations on Odogwu, an email is on its way. <strong>Tap the link in it</strong>, or type the 6-digit code below. Check your spam folder too.</div>
             <label className="field"><span>6-digit code</span>
               <input className="input code-input" inputMode="numeric" autoComplete="one-time-code" maxLength={6} required
                 value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} />

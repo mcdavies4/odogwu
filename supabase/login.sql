@@ -14,6 +14,9 @@ create table if not exists public.login_codes (
   used        boolean not null default false,
   created_at  timestamptz not null default now()
 );
+-- Magic links: only a hash of the link's secret is stored.
+alter table public.login_codes add column if not exists token_hash text;
+create index if not exists login_codes_token_idx on public.login_codes (token_hash);
 create index if not exists login_codes_email_idx on public.login_codes (email, created_at desc);
 alter table public.login_codes enable row level security;
 revoke all on public.login_codes from anon, authenticated;

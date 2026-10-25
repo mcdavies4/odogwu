@@ -57,6 +57,7 @@ const nextConfig = {
       { source: "/h/:path*", headers: privatePage },
       { source: "/admin/:path*", headers: privatePage },
       { source: "/v/:path*", headers: privatePage },
+      { source: "/host/login/:path*", headers: privatePage },
       { source: "/themes/:path*", headers: privatePage },
       { source: "/e/:slug/spray", headers: privatePage },
       { source: "/api/:path*", headers: [{ key: "Cache-Control", value: "no-store" }] },

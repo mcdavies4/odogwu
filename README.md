@@ -166,7 +166,7 @@ delete from events where created_at < now() - interval '24 months';
 | Feature | Where |
 |---|---|
 | Host email | Required on "Create a celebration". The host gets an email with their private link straight away. |
-| Host sign-in | `/host/login` (also in the home page top bar). Email → 6-digit code (10 minutes, single use, 3 sends per 10 minutes). Their celebrations are saved on that device. |
+| Host sign-in | `/host/login` (also in the home page top bar). They get an email with a one-tap **magic link** and a 6-digit code as backup (10 minutes, single use, 3 emails per 10 minutes). The link opens a page with a Sign in button, so email scanners can't use it up. |
 | Rehearsal checklist | Top of every host dashboard. 9 checks for the day before; ticks are saved on the device. |
 | MC kit | Dashboard → **MC kit**: printable MC script (6 moments) and an A4 entrance poster with the QR. |
 

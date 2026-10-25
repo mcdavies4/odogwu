@@ -5,7 +5,8 @@ import { makeHostKey, makeSlug } from "@/lib/ids";
 import { allow, cleanText, clientId, nameProblem, tooMany } from "@/lib/security";
 import { PaystackError } from "@/lib/paystack";
 import { venueBySlug } from "@/lib/venues";
-import { EMAIL_RE, emailHtml, sendEmail } from "@/lib/email";
+import { EMAIL_RE, sendEmail } from "@/lib/email";
+import { welcomeEmail } from "@/lib/emailTemplates";
 import { siteUrl } from "@/lib/events";
 
 const clean = (v: unknown, max = 80) => cleanText(v, max);
@@ -75,16 +76,10 @@ export async function POST(req: Request) {
 
     // Email the host their private link, so it's never lost.
     const link = `${siteUrl()}/h/${slug}?key=${hostKey}`;
-    await sendEmail(
-      hostEmail,
-      `Your Odogwu host link: ${title}`,
-      emailHtml(`${title} is ready 🎉`, [
-        `Paying out to ${resolved.account_name} (${bank?.name ?? "your bank"}).`,
-        "This is your private host link. It opens your dashboard: QR code, spray wall, table cards, report and highlight reel. Keep it safe and don't share it.",
-        "Lost it? Sign in on Odogwu with this email address and we'll send you a code.",
-      ], { label: "Open my dashboard", url: link }),
-      `${title} is ready. Your private host link: ${link}\nKeep it safe. Lost it? Sign in on Odogwu with this email.`
-    ).catch(() => false);
+    const mail = welcomeEmail({
+      title, celebrant: celebrantName, date: eventDate, payee: resolved.account_name, bank: bank?.name ?? "your bank", link,
+    });
+    await sendEmail(hostEmail, mail.subject, mail.html, mail.text).catch(() => false);
 
     return NextResponse.json({ slug, hostKey });
   } catch (e) {
