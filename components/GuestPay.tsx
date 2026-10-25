@@ -1,9 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { MIN_PACK_NAIRA, PACKS_NAIRA, naira, compactNaira } from "@/lib/money";
+import { MIN_PACK_NAIRA, PACKS_NAIRA, naira, compactNaira, serviceFee } from "@/lib/money";
 
-export function GuestPay({ slug, celebrant, feePct }: { slug: string; celebrant: string; feePct: number }) {
+export function GuestPay({ slug, celebrant, feePct, feeFlat }: { slug: string; celebrant: string; feePct: number; feeFlat: number }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [pack, setPack] = useState<number>(5000);
@@ -21,7 +21,7 @@ export function GuestPay({ slug, celebrant, feePct }: { slug: string; celebrant:
   }, [slug]);
 
   const amount = custom ? Number(custom) : pack;
-  const fee = Math.ceil(amount * (feePct / 100));
+  const fee = serviceFee(amount, feePct, feeFlat);
   const valid = (anonymous || name.trim().length > 0) && amount >= MIN_PACK_NAIRA && amount % 100 === 0;
 
   async function pay(e: React.FormEvent) {
@@ -95,8 +95,12 @@ export function GuestPay({ slug, celebrant, feePct }: { slug: string; celebrant:
       {amount >= MIN_PACK_NAIRA && (
         <div className="panel summary">
           <span>Spray pack for {celebrant}</span><span>{naira(amount)}</span>
-          <span className="muted">Service fee ({feePct}%)</span><span className="muted">{naira(fee)}</span>
+          <span className="muted">Odogwu service fee ({feePct}% + {naira(feeFlat)})</span><span className="muted">{naira(fee)}</span>
           <span className="total">You pay</span><span className="total">{naira(amount + fee)}</span>
+          <span className="small muted fee-note">
+            {celebrant} receives the full {naira(amount)}. The service fee covers card and bank charges and keeps Odogwu running.{" "}
+            <a href="/#fees" target="_blank" rel="noopener">How fees work</a>
+          </span>
         </div>
       )}
 

@@ -66,7 +66,7 @@ Import the repo → add the env vars from `.env.example` (set `NEXT_PUBLIC_SITE_
 4. Swipe. Notes appear on the wall live.
 
 ## Settings
-- `PLATFORM_FEE_PERCENT` (default 5): your cut, added on top of the pack. At 5% it covers Paystack's 1.5% + ₦100 (capped at ₦2,000) on every pack size.
+- `PLATFORM_FEE_PERCENT` (default 5) and `PLATFORM_FEE_FLAT` (default 100): the guest's service fee is 5% + ₦100 on top of the pack. Paystack's charge (1.5%, plus ₦100 on payments of ₦2,500 and over, capped at ₦2,000) comes out of it, leaving Odogwu about 3.2–4% of each pack.
 - Packs and note values: `lib/money.ts`.
 
 ## Things to know

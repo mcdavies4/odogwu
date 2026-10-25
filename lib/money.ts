@@ -8,9 +8,20 @@ export function feePercent(): number {
   return Number.isFinite(n) && n >= 0 && n <= 20 ? n : 5;
 }
 
+/** Flat part of the service fee in naira (mirrors Paystack's ₦100 flat charge). */
+export function feeFlat(): number {
+  const n = Number(process.env.PLATFORM_FEE_FLAT ?? 100);
+  return Number.isFinite(n) && n >= 0 && n <= 1000 ? n : 100;
+}
+
+/** Service fee in naira: 5% + ₦100, rounded up to the next naira. Same maths on server and phone. */
+export function serviceFee(packNaira: number, pct: number, flat: number): number {
+  return Math.ceil((packNaira * pct) / 100) + flat;
+}
+
 /** Service fee in kobo, added on top so the celebrant receives the full pack value. */
-export function feeKobo(packNaira: number, pct = feePercent()): number {
-  return Math.ceil(packNaira * 100 * (pct / 100));
+export function feeKobo(packNaira: number, pct = feePercent(), flat = feeFlat()): number {
+  return serviceFee(packNaira, pct, flat) * 100;
 }
 
 export function naira(n: number): string {

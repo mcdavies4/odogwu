@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
+import { FeesSection } from "@/components/FeesSection";
 import { Logo } from "@/components/Note";
 import { FlutterNote } from "@/components/FlutterNote";
 import { InstallButton } from "@/components/InstallButton";
@@ -75,10 +76,12 @@ export default function Home() {
         </div>
       </section>
 
+      <FeesSection />
+
       <section className="section">
         <div className="panel stack">
           <h2 style={{ marginBottom: 0 }}>Questions people ask</h2>
-          <p><strong>What does it cost?</strong> <span className="muted">Guests pay a small service fee on top of their pack. The celebrant receives the full pack value.</span></p>
+          <p><strong>What does it cost?</strong> <span className="muted">Creating a celebration is free. Guests pay a service fee of 5% + ₦100 on top of each spray pack, and the celebrant receives the full pack value. <a href="#fees">See how fees work</a>.</span></p>
           <p><strong>What if a guest doesn&apos;t spray all their notes?</strong> <span className="muted">It&apos;s still the celebrant&apos;s. The pack is a gift the moment it&apos;s paid; spraying is the fun part.</span></p>
           <p><strong>Can guests spray anonymously?</strong> <span className="muted">Yes. They show on the wall as &quot;Secret Odogwu 🤫&quot;. If they want, they can leave their name for the celebrant&apos;s private thank-you list only.</span></p>
           <p><strong>When does the money arrive?</strong> <span className="muted">The next working day. A Saturday party settles on Monday.</span></p>
