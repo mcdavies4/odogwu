@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Footer } from "@/components/Footer";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { clientId } from "@/lib/security";
@@ -104,6 +105,7 @@ export default async function SprayReport({
         )}
         <p className="small muted">Times are Lagos time. Paid through Paystack to {ev.account_name}, {ev.bank_name} ····{ev.account_last4}.</p>
       </main>
+      <Footer />
     </>
   );
 }

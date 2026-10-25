@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Note";
 import { FlutterNote } from "@/components/FlutterNote";
 import { InstallButton } from "@/components/InstallButton";
@@ -84,7 +85,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="footer">Odogwu by The 36th Solutions Ltd · Payments processed by Paystack</footer>
+      <Footer />
     </>
   );
 }

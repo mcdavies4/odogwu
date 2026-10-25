@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Footer } from "@/components/Footer";
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase-server";
 import { headers } from "next/headers";
@@ -97,6 +98,7 @@ export default async function HostDashboard({
           )}
         </section>
       </main>
+      <Footer />
     </>
   );
 }

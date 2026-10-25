@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Note";
 import { BankPicker } from "@/components/BankPicker";
 
@@ -104,6 +105,7 @@ export default function NewCelebration() {
           <p className="small muted center">Payments are processed and settled by Paystack. Odogwu never holds your money.</p>
         </form>
       </main>
+      <Footer />
     </>
   );
 }
