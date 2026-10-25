@@ -20,6 +20,7 @@ export default function Privacy() {
       <ul>
         <li>Celebration name, date and who it&apos;s for.</li>
         <li>The payout bank and account number. Paystack uses the full number to confirm the account name and pay you; <strong>we only store the bank name, the confirmed account name and the last 4 digits.</strong></li>
+        <li>Your email, to send you your private host link and sign-in codes. We don&apos;t send marketing.</li>
         <li>An optional phone number.</li>
       </ul>
       <h3>From guests</h3>

@@ -22,7 +22,10 @@ export default function Home() {
     <>
       <header className="topbar">
         <Link href="/" className="brand"><Logo />Odogwu</Link>
-        <Link href="/host/new" className="btn btn-ghost" style={{ minHeight: 44 }}>Create a celebration</Link>
+        <div className="topbar-links">
+          <Link href="/host/login" className="topbar-link">Host sign-in</Link>
+          <Link href="/host/new" className="btn btn-ghost" style={{ minHeight: 44 }}>Create a celebration</Link>
+        </div>
       </header>
 
       <section className="hero pattern">

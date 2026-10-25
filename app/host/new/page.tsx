@@ -11,7 +11,7 @@ type Bank = { name: string; code: string };
 export default function NewCelebration() {
   const router = useRouter();
   const [banks, setBanks] = useState<Bank[]>([]);
-  const [form, setForm] = useState({ title: "", celebrantName: "", eventDate: "", bankCode: "", accountNumber: "", hostPhone: "" });
+  const [form, setForm] = useState({ title: "", celebrantName: "", eventDate: "", bankCode: "", accountNumber: "", hostPhone: "", hostEmail: "" });
   const [accountName, setAccountName] = useState<string | null>(null);
   const [resolving, setResolving] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -102,6 +102,10 @@ export default function NewCelebration() {
             {accountName && <div className="ok">Paying out to <strong>{accountName}</strong></div>}
           </div>
 
+          <label className="field"><span>Your email</span>
+            <input className="input" type="email" inputMode="email" autoComplete="email" required placeholder="you@example.com" value={form.hostEmail} onChange={set("hostEmail")} />
+            <small>We email you your private host link, and you can sign back in with it if you lose the link.</small>
+          </label>
           <label className="field"><span>Your phone number (optional)</span>
             <input className="input" type="tel" inputMode="tel" placeholder="0803 000 0000" value={form.hostPhone} onChange={set("hostPhone")} />
           </label>

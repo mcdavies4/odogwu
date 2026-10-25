@@ -17,6 +17,7 @@ import { NowDancing } from "@/components/NowDancing";
 import { ThemePicker } from "@/components/ThemePicker";
 import { CopyLink } from "@/components/CopyLink";
 import { ABROAD_ENABLED } from "@/lib/flags";
+import { Rehearsal } from "@/components/Rehearsal";
 
 export const dynamic = "force-dynamic";
 export const metadata = { robots: { index: false } };
@@ -70,6 +71,8 @@ export default async function HostDashboard({
           Bookmark this page. It&apos;s your private host link, and anyone with it can manage this celebration.
         </div>
 
+        <Rehearsal slug={ev.slug} hostKey={key} payee={ev.account_name} bank={ev.bank_name} />
+
         <div className="stats">
           <div className="stat"><b>{naira(totalNaira)}</b><span>Received</span></div>
           <div className="stat"><b>{guests}</b><span>{guests === 1 ? "Guest" : "Guests"} sprayed</span></div>
@@ -90,6 +93,7 @@ export default async function HostDashboard({
           <Link className="tool" href={`/h/${ev.slug}/cards?key=${k}`}><span>🖨️</span><strong>Table cards</strong><small>Print QR cards for every table</small></Link>
           <Link className="tool" href={`/h/${ev.slug}/report?key=${k}`}><span>📋</span><strong>Spray report</strong><small>Who sprayed and how much</small></Link>
           <Link className="tool" href={`/h/${ev.slug}/recap?key=${k}`}><span>🎬</span><strong>Highlight reel</strong><small>A 20-second video to post</small></Link>
+          <Link className="tool" href={`/h/${ev.slug}/mc?key=${k}`}><span>🎤</span><strong>MC kit</strong><small>Script and entrance poster</small></Link>
           <Link className="tool" href={`/e/${ev.slug}/wall`} target="_blank"><span>📺</span><strong>Spray wall</strong><small>For the projector or TV</small></Link>
         </div>
 

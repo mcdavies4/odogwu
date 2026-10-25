@@ -155,3 +155,19 @@ Guests can switch on **Spray anonymously**. They appear on the wall and leaderbo
 ```sql
 delete from events where created_at < now() - interval '24 months';
 ```
+
+## Host sign-in, rehearsal checklist, MC kit
+
+**One-time setup**
+1. Run `supabase/login.sql` in Supabase → SQL Editor.
+2. Create a free account at resend.com → **API Keys** → create a key. In Vercel add `RESEND_API_KEY` (and `EMAIL_FROM` once your domain is verified), then redeploy.
+3. Until your domain is verified in Resend, emails only reach your own Resend account email. Verify the domain (Resend → Domains) as soon as you buy it.
+
+| Feature | Where |
+|---|---|
+| Host email | Required on "Create a celebration". The host gets an email with their private link straight away. |
+| Host sign-in | `/host/login` (also in the home page top bar). Email → 6-digit code (10 minutes, single use, 3 sends per 10 minutes). Their celebrations are saved on that device. |
+| Rehearsal checklist | Top of every host dashboard. 9 checks for the day before; ticks are saved on the device. |
+| MC kit | Dashboard → **MC kit**: printable MC script (6 moments) and an A4 entrance poster with the QR. |
+
+Celebrations created before this update have no email saved, so their hosts still need the private link.

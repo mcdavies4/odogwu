@@ -42,6 +42,7 @@ export function MyCelebrations() {
             </li>
           ))}
         </ul>
+        <p className="small muted">Not here? <Link href="/host/login">Sign in with your email</Link>.</p>
       </div>
     </section>
   );

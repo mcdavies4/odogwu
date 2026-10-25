@@ -5,6 +5,8 @@ import { makeHostKey, makeSlug } from "@/lib/ids";
 import { allow, cleanText, clientId, nameProblem, tooMany } from "@/lib/security";
 import { PaystackError } from "@/lib/paystack";
 import { venueBySlug } from "@/lib/venues";
+import { EMAIL_RE, emailHtml, sendEmail } from "@/lib/email";
+import { siteUrl } from "@/lib/events";
 
 const clean = (v: unknown, max = 80) => cleanText(v, max);
 
@@ -20,6 +22,10 @@ export async function POST(req: Request) {
   const bankCode = clean(body.bankCode, 20);
   const accountNumber = clean(body.accountNumber, 10);
   const hostPhone = clean(body.hostPhone, 20) || null;
+  const hostEmail = clean(body.hostEmail, 120).toLowerCase();
+  if (!EMAIL_RE.test(hostEmail)) {
+    return NextResponse.json({ error: "Enter your email so we can send you your private host link." }, { status: 400 });
+  }
 
   if (!title || !celebrantName) {
     return NextResponse.json({ error: "Give the celebration a name and say who it's for." }, { status: 400 });
@@ -59,9 +65,26 @@ export async function POST(req: Request) {
       account_last4: accountNumber.slice(-4),
       subaccount_code: sub.subaccount_code,
     };
-    let { error } = await supabaseAdmin().from("events").insert(venue ? { ...row, venue_id: venue.id } : row);
-    if (error && venue) ({ error } = await supabaseAdmin().from("events").insert(row)); // features.sql not run yet
+    const db = supabaseAdmin();
+    const full = { ...row, host_email: hostEmail, ...(venue ? { venue_id: venue.id } : {}) };
+    let { error } = await db.from("events").insert(full);
+    // Older database (features.sql / login.sql not run yet): save what it can.
+    if (error && venue) ({ error } = await db.from("events").insert({ ...row, venue_id: venue.id }));
+    if (error) ({ error } = await db.from("events").insert(row));
     if (error) throw new Error(`db: ${error.message}`);
+
+    // Email the host their private link, so it's never lost.
+    const link = `${siteUrl()}/h/${slug}?key=${hostKey}`;
+    await sendEmail(
+      hostEmail,
+      `Your Odogwu host link: ${title}`,
+      emailHtml(`${title} is ready 🎉`, [
+        `Paying out to ${resolved.account_name} (${bank?.name ?? "your bank"}).`,
+        "This is your private host link. It opens your dashboard: QR code, spray wall, table cards, report and highlight reel. Keep it safe and don't share it.",
+        "Lost it? Sign in on Odogwu with this email address and we'll send you a code.",
+      ], { label: "Open my dashboard", url: link }),
+      `${title} is ready. Your private host link: ${link}\nKeep it safe. Lost it? Sign in on Odogwu with this email.`
+    ).catch(() => false);
 
     return NextResponse.json({ slug, hostKey });
   } catch (e) {

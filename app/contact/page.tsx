@@ -22,7 +22,7 @@ export default function Contact() {
       <p><strong>I paid but can&apos;t see my notes.</strong> If you paid by bank transfer, it can take a minute or two. Keep the spray screen open. You can also reopen the celebration link and tap &quot;Continue spraying your last pack&quot;.</p>
       <p><strong>When does the celebrant get the money?</strong> Paystack pays them the next working day. See <Link href="/#fees">how fees work</Link>.</p>
       <p><strong>Can I get a refund?</strong> Spray packs are gifts and go straight to the celebrant, so we can&apos;t refund them. See our <Link href="/terms">Terms</Link>.</p>
-      <p><strong>I lost my host link.</strong> Open Odogwu on the phone or laptop you used to create the celebration: it&apos;s under &quot;Your celebrations&quot; on the home page. If that doesn&apos;t work, email us from your phone number or email on the account and we&apos;ll verify you.</p>
+      <p><strong>I lost my host link.</strong> Open Odogwu on the phone or laptop you used to create the celebration: it&apos;s under &quot;Your celebrations&quot; on the home page. Or <Link href="/host/login">sign in with the email you used</Link> and we&apos;ll send you a code.</p>
 
       <p className="muted small" style={{ marginTop: 28 }}>{COMPANY}, {COMPANY_ADDRESS}</p>
     </LegalPage>
