@@ -393,6 +393,8 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 .legal p + p { margin-top: 10px; }
 .legal ul { padding-left: 20px; margin: 0; display: grid; gap: 8px; }
 .legal a { color: var(--gold); }
+.legal a.btn { color: var(--wine); text-decoration: none; }
+.legal a.btn-ghost { color: var(--lace); }
 .legal code { background: var(--plum); padding: 1px 6px; border-radius: 6px; font-size: 14px; }
 .legal-intro { background: var(--plum); border-radius: var(--r-sm); padding: 16px 18px; margin: 18px 0 8px; }
 p.small a { color: var(--gold); }
