@@ -8,6 +8,7 @@ import { venueBySlug } from "@/lib/venues";
 import { EMAIL_RE, sendEmail } from "@/lib/email";
 import { welcomeEmail } from "@/lib/emailTemplates";
 import { siteUrl } from "@/lib/events";
+import { logIncident } from "@/lib/ops";
 
 const clean = (v: unknown, max = 80) => cleanText(v, max);
 
@@ -85,6 +86,13 @@ export async function POST(req: Request) {
   } catch (e) {
     // Paystack messages are written for users; anything else stays in the server log only.
     console.error("create event failed", e);
+    // A Paystack message is usually the host's own typo (wrong account). Anything else is ours to fix.
+    if (!(e instanceof PaystackError) || (e as PaystackError).status >= 500) {
+      await logIncident("event_create_failed", { title, error: String(e) }, {
+        title: "Someone couldn't create a celebration",
+        lines: [`Celebration: ${title} for ${celebrantName}`, `Host: ${hostEmail}`, `Error: ${String(e)}`, "They saw: \"Could not create the celebration. Please try again.\""],
+      });
+    }
     const msg = e instanceof PaystackError ? e.message : "Could not create the celebration. Please try again.";
     return NextResponse.json({ error: msg }, { status: 400 });
   }

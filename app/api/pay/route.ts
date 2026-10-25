@@ -7,6 +7,7 @@ import { allow, cleanText, clientId, nameProblem, tooMany } from "@/lib/security
 import { ANONYMOUS } from "@/lib/hype";
 import { flagOf, isCountry } from "@/lib/countries";
 import { ABROAD_ENABLED } from "@/lib/flags";
+import { logIncident } from "@/lib/ops";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -84,6 +85,12 @@ export async function POST(req: Request) {
   } catch (e) {
     await db.from("payments").update({ status: "failed" }).eq("reference", reference);
     console.error("pay init failed", e);
+    if (!(e instanceof PaystackError) || (e as PaystackError).status >= 401) {
+      await logIncident("pay_init_failed", { slug: ev.slug, error: String(e) }, {
+        title: "Guests can't start a payment",
+        lines: [`Celebration: ${ev.title} (${ev.slug})`, `Error: ${String(e)}`, "Check the Paystack dashboard and your PAYSTACK_SECRET_KEY in Vercel."],
+      });
+    }
     // Paystack's own messages are written for people; network errors are not.
     const msg = e instanceof PaystackError ? e.message : "Couldn't reach the payment provider. Please try again in a moment.";
     return NextResponse.json({ error: msg }, { status: 502 });

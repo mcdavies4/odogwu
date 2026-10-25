@@ -7,7 +7,7 @@ export function emailReady(): boolean {
   return !!process.env.RESEND_API_KEY;
 }
 
-export async function sendEmail(to: string, subject: string, html: string, text: string): Promise<boolean> {
+export async function sendEmail(to: string, subject: string, html: string, text: string, opts: { replyTo?: string } = {}): Promise<boolean> {
   const key = process.env.RESEND_API_KEY;
   if (!key) return false;
   try {
@@ -20,6 +20,7 @@ export async function sendEmail(to: string, subject: string, html: string, text:
         subject,
         html,
         text,
+        ...(opts.replyTo ? { reply_to: opts.replyTo } : {}),
       }),
       cache: "no-store",
     });

@@ -39,3 +39,9 @@ export function compactNaira(n: number): string {
   if (n >= 1000) return "₦" + (n / 1000).toFixed(n % 1000 ? 1 : 0) + "k";
   return "₦" + n;
 }
+
+/** Share for venues and planners who sign themselves up, in percent of pack value (you pay it from Odogwu's fee). */
+export function partnerShare(): number {
+  const n = Number(process.env.PARTNER_SHARE_PERCENT ?? 1);
+  return Number.isFinite(n) && n >= 0 && n <= 5 ? n : 1;
+}

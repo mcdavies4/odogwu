@@ -134,3 +134,148 @@ export function welcomeEmail(o: { title: string; celebrant: string; date: string
     text: `${o.title} is ready on Odogwu.\n\nYour private host link (keep it safe, don't forward it):\n${o.link}\n\nSpraying: ${o.celebrant}\nDate: ${when}\nMoney goes to: ${o.payee} (${o.bank})\nPaid out: next working day, by Paystack\n\nNext: print your table cards, do the rehearsal checklist the day before, and give the MC the script.\n\nLost the link? Sign in on Odogwu with this email.`,
   };
 }
+
+/* ------------------------------------------------------------------ */
+/* Self-serve and automation emails                                    */
+/* ------------------------------------------------------------------ */
+
+const longDate = (d: string | null) =>
+  d ? new Date(d + "T12:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }) : "your celebration day";
+const money = (n: number) => `₦${Math.round(n).toLocaleString("en-NG")}`;
+
+/** To you: something needs a look. */
+export function adminAlertEmail(title: string, lines: string[], link?: { label: string; url: string }): Email {
+  return {
+    subject: `⚠️ Odogwu: ${title}`,
+    html: layout({ preheader: lines[0] ?? title, heading: title, intro: lines, button: link }),
+    text: `${title}\n\n${lines.join("\n")}${link ? `\n\n${link.label}: ${link.url}` : ""}`,
+  };
+}
+
+/** To the person who asked for help: we've got it, and what happens next. */
+export function helpReceivedEmail(o: { name: string; ticket: number | null; topic: string; message: string }): Email {
+  const ref = o.ticket ? `#${o.ticket}` : "";
+  return {
+    subject: `We've got your message ${ref}`.trim(),
+    html: layout({
+      preheader: "A real person will reply, usually within a few hours.",
+      heading: `Thanks${o.name ? `, ${o.name}` : ""}. We've got your message.`,
+      intro: [
+        "A real person will reply to this email, usually within a few hours.",
+        "Just reply to this email if you want to add anything.",
+      ],
+      facts: [["Request", ref || "Received"], ["About", o.topic], ["You said", o.message.slice(0, 300)]],
+      after: ["If this is about a payment: the money always goes through Paystack to the celebrant's own bank. Odogwu never holds it."],
+    }),
+    text: `Thanks, we've got your message ${ref}.\n\nA real person will reply, usually within a few hours.\n\nAbout: ${o.topic}\nYou said: ${o.message}`,
+  };
+}
+
+/** To the host: the payout account was changed. Sent every time, so a leaked link can't be used quietly. */
+export function payoutChangedEmail(o: { title: string; payee: string; bank: string; last4: string; link: string }): Email {
+  return {
+    subject: `Payout account changed for ${o.title}`,
+    html: layout({
+      preheader: `New spray packs now pay out to ${o.payee}.`,
+      heading: "Your payout account was changed",
+      intro: [`From now on, new spray packs for ${o.title} pay out to this account. Packs bought before the change still go to the old account.`],
+      facts: [["Account name", o.payee], ["Bank", o.bank], ["Account", `····${o.last4}`]],
+      button: { label: "Open my dashboard", url: o.link },
+      after: ["Didn't make this change? Someone may have your private host link. Reply to this email straight away."],
+    }),
+    text: `Your payout account for ${o.title} was changed.\n\nNew spray packs now pay out to ${o.payee}, ${o.bank} ····${o.last4}. Earlier packs still go to the old account.\n\nDashboard: ${o.link}\n\nDidn't make this change? Reply to this email straight away.`,
+  };
+}
+
+/** To the host, the day before: the rehearsal, so nothing is left to the night. */
+export function reminderEmail(o: { title: string; date: string | null; payee: string; bank: string; link: string; cards: string; mc: string; wall: string }): Email {
+  return {
+    subject: `Tomorrow: get ${o.title} ready in 15 minutes`,
+    html: layout({
+      preheader: "Your rehearsal checklist for tomorrow's spraying.",
+      heading: "Your celebration is tomorrow 🎉",
+      intro: [`${o.title} is on ${longDate(o.date)}. Spend 15 minutes on these today and the night runs itself.`],
+      facts: [["Money goes to", `${o.payee} (${o.bank})`]],
+      button: { label: "Open the rehearsal checklist", url: o.link },
+      steps: [
+        { title: "Check the payout name above", text: "Wrong? Change it from your dashboard before guests start spraying." },
+        { title: "Print the table cards", text: `One per table, plus the entrance poster: ${o.cards}` },
+        { title: "Test the spray wall on the projector", text: `Open it on the laptop you'll use at the venue: ${o.wall}` },
+        { title: "Do one ₦1,000 test spray", text: "It should land on the wall within a second. The money goes to the celebrant." },
+        { title: "Give the MC the script", text: o.mc },
+      ],
+      after: ["Something not working? Every page has a Help button, and most problems fix themselves from there."],
+    }),
+    text: `${o.title} is tomorrow.\n\n1. Check the payout name: ${o.payee} (${o.bank}). Change it from your dashboard if wrong.\n2. Print table cards: ${o.cards}\n3. Test the wall on the projector: ${o.wall}\n4. Do one ₦1,000 test spray.\n5. Give the MC the script: ${o.mc}\n\nDashboard: ${o.link}`,
+  };
+}
+
+/** To the host, the morning after: how it went, when the money lands, and what to keep. */
+export function summaryEmail(o: {
+  title: string; total: number; guests: number; top: string | null; payee: string; bank: string;
+  link: string; report: string; recap: string; feedback: string;
+}): Email {
+  const intro = o.total > 0
+    ? [`Your guests sprayed ${money(o.total)} at ${o.title}. 🎉`, `Paystack pays it into ${o.payee}'s account (${o.bank}) the next working day after each payment. Money from a Saturday party usually lands on Monday.`]
+    : [`It looks like nobody sprayed through Odogwu at ${o.title}. If that's not right, reply to this email and we'll check.`];
+  return {
+    subject: o.total > 0 ? `${money(o.total)} sprayed at ${o.title} 🎉` : `How did ${o.title} go?`,
+    html: layout({
+      preheader: o.total > 0 ? "Your spray report, highlight reel and payout details." : "Tell us how it went.",
+      heading: o.total > 0 ? "What a celebration!" : "How did it go?",
+      intro,
+      facts: o.total > 0 ? [["Total sprayed", money(o.total)], ["Guests who sprayed", String(o.guests)], ...(o.top ? [["Top sprayer", o.top] as [string, string]] : [])] : undefined,
+      button: o.total > 0 ? { label: "Download the spray report", url: o.report } : { label: "Open my dashboard", url: o.link },
+      steps: o.total > 0 ? [
+        { title: "Thank your guests", text: "The spray report lists who gave what, for your thank-you messages." },
+        { title: "Post the highlight reel", text: `A 20-second video of the night: ${o.recap}` },
+        { title: "Tell us how it went", text: `Two questions, one minute: ${o.feedback}` },
+      ] : undefined,
+      after: ["Payout not arrived after two working days? Reply to this email with the celebration name and we'll chase it with Paystack."],
+    }),
+    text: `${intro.join("\n\n")}\n\nSpray report: ${o.report}\nHighlight reel: ${o.recap}\nTell us how it went: ${o.feedback}\nDashboard: ${o.link}`,
+  };
+}
+
+/** To a new venue or planner partner: their links, straight away. */
+export function partnerWelcomeEmail(o: { name: string; kind: "venue" | "planner"; dashboard: string; clientLink: string; sharePct: number }): Email {
+  const who = o.kind === "planner" ? "clients" : "celebrants at your hall";
+  return {
+    subject: `${o.name} is now an Odogwu partner`,
+    html: layout({
+      preheader: "Your partner dashboard and your link for clients.",
+      heading: `Welcome, ${o.name} 🤝`,
+      intro: [
+        `You're set up. Every celebration made with your link counts towards your share${o.sharePct ? ` of ${o.sharePct}% of everything sprayed` : ""}.`,
+      ],
+      facts: [["Your link for clients", o.clientLink], ...(o.sharePct ? [["Your share", `${o.sharePct}% of spray pack value`] as [string, string]] : [])],
+      button: { label: "Open my partner dashboard", url: o.dashboard },
+      steps: [
+        { title: `Send ${who} your link`, text: "They create their celebration with it. It takes two minutes." },
+        { title: "Put the spray wall on your screen", text: "Each celebration's wall opens from its host dashboard." },
+        { title: "Watch your dashboard", text: "See every celebration and what was sprayed, live." },
+      ],
+      after: [
+        "Keep this email. The dashboard link is private. Lost it? Use Host sign-in on Odogwu with this email address.",
+        "Your share is paid to you monthly. Reply to this email with the bank account you'd like it paid into.",
+      ],
+    }),
+    text: `Welcome, ${o.name}.\n\nYour link for clients: ${o.clientLink}\nYour private dashboard: ${o.dashboard}\n${o.sharePct ? `Your share: ${o.sharePct}% of spray pack value, paid monthly.\n` : ""}\nReply with the bank account you'd like your share paid into.`,
+  };
+}
+
+/** To you, every morning: what happened, and only the things that need you. */
+export function digestEmail(o: { date: string; lines: string[]; attention: string[]; adminLink: string }): Email {
+  const quiet = o.attention.length === 0;
+  return {
+    subject: quiet ? `Odogwu daily: all good (${o.date})` : `Odogwu daily: ${o.attention.length} thing${o.attention.length === 1 ? "" : "s"} need you (${o.date})`,
+    html: layout({
+      preheader: quiet ? "Nothing needs you today." : o.attention[0],
+      heading: quiet ? "All good ✅" : "Needs you",
+      intro: quiet ? ["Nothing needs you today."] : o.attention,
+      facts: o.lines.map((l) => { const i = l.indexOf(": "); return [l.slice(0, i), l.slice(i + 2)] as [string, string]; }),
+      button: { label: "Open the inbox", url: o.adminLink },
+    }),
+    text: `${quiet ? "All good. Nothing needs you today." : o.attention.join("\n")}\n\n${o.lines.join("\n")}\n\n${o.adminLink}`,
+  };
+}

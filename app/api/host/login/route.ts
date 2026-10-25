@@ -25,6 +25,15 @@ async function celebrationsFor(email: string) {
   return (data ?? []).map((e) => ({ slug: e.slug, key: e.host_key, title: e.title }));
 }
 
+/** Partner dashboards (venues and planners) that signed up with this email. */
+async function partnersFor(email: string) {
+  const { data, error } = await supabaseAdmin().from("venues").select("slug,name,venue_key").eq("email", email).limit(20);
+  if (error) return []; // automation.sql not run yet
+  return (data ?? []).map((v) => ({ name: v.name, href: `/v/${v.slug}?key=${encodeURIComponent(v.venue_key)}` }));
+}
+
+const signedIn = async (email: string) => NextResponse.json({ celebrations: await celebrationsFor(email), partners: await partnersFor(email) });
+
 const usable = (r: CodeRow | null) => !!r && !r.used && new Date(r.expires_at).getTime() > Date.now() && r.attempts < 5;
 
 /**
@@ -46,7 +55,7 @@ export async function POST(req: Request) {
     const { data: row } = await db.from("login_codes").select("*").eq("token_hash", tokenHash(token)).maybeSingle<CodeRow>();
     if (!usable(row)) return NextResponse.json({ error: BAD }, { status: 400 });
     await db.from("login_codes").update({ used: true }).eq("id", row!.id);
-    return NextResponse.json({ celebrations: await celebrationsFor(row!.email) });
+    return signedIn(row!.email);
   }
 
   const email = cleanText(body.email, 120).toLowerCase();
@@ -70,7 +79,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: BAD }, { status: 400 });
     }
     await db.from("login_codes").update({ used: true }).eq("id", row!.id);
-    return NextResponse.json({ celebrations: await celebrationsFor(email) });
+    return signedIn(email);
   }
 
   // ---- Send the email
@@ -80,7 +89,8 @@ export async function POST(req: Request) {
   }
   const { data: hosted, error } = await db.from("events").select("id").eq("host_email", email).limit(1);
   if (error) return NextResponse.json({ error: NOT_READY }, { status: 503 }); // login.sql not run yet
-  if (hosted && hosted.length) {
+  const partner = (await partnersFor(email)).length > 0;
+  if ((hosted && hosted.length) || partner) {
     const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
     const token = randomBytes(32).toString("base64url");
     const row = { email, code_hash: codeHash(email, code), expires_at: new Date(Date.now() + 10 * 60_000).toISOString() };

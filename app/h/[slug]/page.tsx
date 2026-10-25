@@ -18,6 +18,7 @@ import { ThemePicker } from "@/components/ThemePicker";
 import { CopyLink } from "@/components/CopyLink";
 import { ABROAD_ENABLED } from "@/lib/flags";
 import { Rehearsal } from "@/components/Rehearsal";
+import { HostSettings, Payouts } from "@/components/HostSettings";
 
 export const dynamic = "force-dynamic";
 export const metadata = { robots: { index: false } };
@@ -80,6 +81,7 @@ export default async function HostDashboard({
         <p className="small muted">
           Paystack pays this to your bank the next working day. Money from a Saturday party arrives on Monday.
         </p>
+        <Payouts slug={ev.slug} hostKey={key} received={totalNaira} />
 
         {ev.is_open ? <ShareQR url={guestUrl} title={ev.celebrant_name} /> : <div className="error">Spraying is closed. Guests can&apos;t buy new packs.</div>}
 
@@ -119,7 +121,10 @@ export default async function HostDashboard({
           <CopyLink label="Guest link" url={guestUrl} />
         </section>}
 
+        <HostSettings slug={ev.slug} hostKey={key} title={ev.title} celebrant={ev.celebrant_name} date={ev.event_date} payee={ev.account_name} />
+
         <InstallButton className="btn btn-ghost btn-block" label="Install Odogwu on this phone" />
+        <Link className="btn btn-ghost btn-block" href="/help">Help &amp; answers</Link>
 
         <section className="stack">
           <h2 style={{ fontSize: 20 }}>Latest spray packs</h2>

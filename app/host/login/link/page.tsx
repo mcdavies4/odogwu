@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Logo } from "@/components/Note";
 
 type Hosted = { slug: string; key: string; title: string };
+type Partner = { name: string; href: string };
 
 /**
  * Where the magic link lands. Signing in needs a tap, so email security scanners
@@ -14,6 +15,7 @@ export default function MagicLink() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [list, setList] = useState<Hosted[] | null>(null);
+  const [partners, setPartners] = useState<Partner[]>([]);
 
   useEffect(() => {
     const t = new URLSearchParams(window.location.search).get("t");
@@ -35,10 +37,16 @@ export default function MagicLink() {
         const saved = JSON.parse(localStorage.getItem("odogwu:hosted") || "[]") as Hosted[];
         localStorage.setItem("odogwu:hosted", JSON.stringify([...found, ...saved.filter((s) => !found.some((f) => f.slug === s.slug))].slice(0, 30)));
       } catch {}
-      if (found.length === 1) {
+      const ps: Partner[] = d.partners ?? [];
+      if (found.length === 1 && !ps.length) {
         window.location.replace(`/h/${found[0].slug}?key=${encodeURIComponent(found[0].key)}`);
         return;
       }
+      if (!found.length && ps.length === 1) {
+        window.location.replace(ps[0].href);
+        return;
+      }
+      setPartners(ps);
       setList(found);
     } catch (e) {
       setError((e as Error).message || "Something went wrong. Try again.");
@@ -54,12 +62,17 @@ export default function MagicLink() {
         {list ? (
           <div className="stack" style={{ width: "100%", textAlign: "left" }}>
             <h1 style={{ fontSize: 28 }}>You&apos;re in</h1>
+            {partners.length > 0 && (
+              <ul className="list">
+                {partners.map((p) => <li key={p.href}><span>🤝 {p.name}</span><a href={p.href}>Partner dashboard</a></li>)}
+              </ul>
+            )}
             {list.length ? (
               <ul className="list">
                 {list.map((h) => <li key={h.slug}><span>{h.title}</span><a href={`/h/${h.slug}?key=${encodeURIComponent(h.key)}`}>Open dashboard</a></li>)}
               </ul>
             ) : (
-              <p className="muted">There are no celebrations for this email yet. <Link href="/host/new">Create one</Link>.</p>
+              <p className="muted">{partners.length ? "No celebrations of your own yet." : "There are no celebrations for this email yet."} <Link href="/host/new">Create one</Link>.</p>
             )}
           </div>
         ) : token === null ? (

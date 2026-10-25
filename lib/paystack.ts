@@ -1,7 +1,8 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "crypto";
 
-const BASE = "https://api.paystack.co";
+// PAYSTACK_API_URL is only for local testing against a stand-in; leave it unset in Vercel.
+const BASE = process.env.PAYSTACK_API_URL || "https://api.paystack.co";
 
 function key(): string {
   const k = process.env.PAYSTACK_SECRET_KEY;
@@ -144,4 +145,13 @@ export function isValidWebhook(rawBody: string, signature: string | null): boole
   const a = Buffer.from(expected);
   const b = Buffer.from(signature);
   return a.length === b.length && timingSafeEqual(a, b);
+}
+
+export type Settlement = { id: number; status: string; total_amount: number; effective_amount?: number; settlement_date: string | null; createdAt?: string };
+
+/** Payouts Paystack has made (or is making) to one celebrant's subaccount, newest first. */
+export async function listSubaccountSettlements(subaccountCode: string): Promise<Settlement[]> {
+  // The settlement list filters by the subaccount's numeric id, so look that up from the code first.
+  const sub = await ps<{ id: number }>(`/subaccount/${encodeURIComponent(subaccountCode)}`);
+  return ps<Settlement[]>(`/settlement?subaccount=${sub.id}&perPage=20`);
 }

@@ -23,8 +23,10 @@ export default function Home() {
       <header className="topbar">
         <Link href="/" className="brand"><Logo />Odogwu</Link>
         <div className="topbar-links">
-          <Link href="/host/login" className="topbar-link">Host sign-in</Link>
-          <Link href="/host/new" className="btn btn-ghost" style={{ minHeight: 44 }}>Create a celebration</Link>
+          <Link href="/partners" className="topbar-link">Partners</Link>
+          <Link href="/help" className="topbar-link keep">Help</Link>
+          <Link href="/host/login" className="topbar-link">Sign in</Link>
+          <Link href="/host/new" className="btn btn-ghost topbar-cta" style={{ minHeight: 44 }}>Create a celebration</Link>
         </div>
       </header>
 
@@ -90,7 +92,7 @@ export default function Home() {
           <p><strong>Can guests spray anonymously?</strong> <span className="muted">Yes. They show on the wall as &quot;Secret Odogwu 🤫&quot;. If they want, they can leave their name for the celebrant&apos;s private thank-you list only.</span></p>
 {ABROAD_ENABLED &&           <p><strong>Can family abroad spray?</strong> <span className="muted">Yes. They open the guest link from anywhere, pick their country and pay with a foreign card. Their flag shows next to their name on the wall, and they can watch it live.</span></p>}
           <p><strong>Do we get anything to keep?</strong> <span className="muted">Every celebration gets a spray report of who gave what, and a 20-second highlight reel to post. <a href="/demo/recap">See an example reel</a>.</span></p>
-          <p><strong>Run an event centre?</strong> <span className="muted">Partner with us: your hall gets its own dashboard and earns a share of every spray pack at your events. <a href="/contact">Get in touch</a>.</span></p>
+          <p><strong>Run an event centre or plan events?</strong> <span className="muted">Become a partner in two minutes: you get your own dashboard and earn a share of every spray pack at the celebrations you bring. <a href="/partners">Become a partner</a>.</span></p>
           <p><strong>When does the money arrive?</strong> <span className="muted">The next working day. A Saturday party settles on Monday.</span></p>
         </div>
       </section>

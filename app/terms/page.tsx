@@ -84,7 +84,7 @@ export default function Terms() {
       <h2>10. Contact</h2>
       <p>
         {COMPANY}, {COMPANY_ADDRESS}. Email <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> or use the{" "}
-        <Link href="/contact">contact page</Link>.
+        <Link href="/help">Help page</Link>.
       </p>
     </LegalPage>
   );

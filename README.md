@@ -171,3 +171,20 @@ delete from events where created_at < now() - interval '24 months';
 | MC kit | Dashboard → **MC kit**: printable MC script (6 moments) and an A4 entrance poster with the QR. |
 
 Celebrations created before this update have no email saved, so their hosts still need the private link.
+
+## Self-serve and automation
+
+Odogwu runs itself: hosts, guests and partners fix most problems without contacting you, and you hear about the rest by email.
+
+**What it does on its own**
+- **Help centre** (`/help`): searchable answers for guests, hosts and partners. Guests can check any spray pack with Paystack and go straight back to their notes. The "Message us" form checks any payment reference automatically before it reaches you, emails you (reply goes straight to them), and sends them a confirmation.
+- **Hosts fix their own details**: change the celebration name/date, change the payout account (the bank name is checked, a new Paystack subaccount is made, and the host is emailed every time), and see payouts straight from Paystack.
+- **Partners sign themselves up** (`/partners`): venues and planners get their dashboard and client link instantly, by email too. They sign back in with their email like hosts. You get an email for each new partner and can change their share on the Partners admin page.
+- **Every morning at 7am Lagos time** (`/api/cron/daily`): re-checks unconfirmed payments with Paystack, emails hosts their rehearsal checklist the day before and their results the morning after, and emails you one summary of what happened and anything that needs you.
+- **Instant alerts** to you if guests can't pay, a celebration can't be created, a Paystack webhook fails, or a payment arrives at the wrong amount (max one email per problem type every 10 minutes).
+- **Your inbox** (`/admin/inbox`): open help requests and this week's problems in one place.
+
+**One-time setup**
+1. Run `supabase/automation.sql` in Supabase → SQL Editor.
+2. In Vercel, add `ADMIN_EMAIL`, `CRON_SECRET` and `PARTNER_SHARE_PERCENT` (see `.env.example`), then redeploy.
+3. Make sure `RESEND_API_KEY` is set and your domain is verified in Resend, or no emails go out.

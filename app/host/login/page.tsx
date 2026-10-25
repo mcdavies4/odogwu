@@ -5,6 +5,7 @@ import { Logo } from "@/components/Note";
 import { Footer } from "@/components/Footer";
 
 type Hosted = { slug: string; key: string; title: string };
+type Partner = { name: string; href: string };
 
 /** Lost your private host link? Get back in with a code sent to your email. */
 export default function HostLogin() {
@@ -14,6 +15,7 @@ export default function HostLogin() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [list, setList] = useState<Hosted[]>([]);
+  const [partners, setPartners] = useState<Partner[]>([]);
 
   async function call(payload: Record<string, string>) {
     setBusy(true);
@@ -47,6 +49,7 @@ export default function HostLogin() {
       localStorage.setItem("odogwu:hosted", JSON.stringify(merged));
     } catch {}
     setList(found);
+    setPartners(d.partners ?? []);
     setStep("done");
   }
 
@@ -54,11 +57,11 @@ export default function HostLogin() {
     <>
       <header className="topbar"><Link href="/" className="brand"><Logo />Odogwu</Link></header>
       <main className="wrap stack">
-        <h1 style={{ fontSize: 32 }}>Host sign-in</h1>
+        <h1 style={{ fontSize: 32 }}>Sign in</h1>
 
         {step === "email" && (
           <form className="stack" onSubmit={send}>
-            <p className="muted">Lost your private host link? Enter the email you used when you created your celebration and we&apos;ll email you a sign-in link.</p>
+            <p className="muted">For hosts and partners. Enter the email you used when you created your celebration or signed up as a partner, and we&apos;ll email you a sign-in link.</p>
             <label className="field"><span>Email</span>
               <input className="input" type="email" inputMode="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </label>
@@ -82,9 +85,14 @@ export default function HostLogin() {
 
         {step === "done" && (
           <div className="stack">
-            {list.length ? (
+            {partners.length > 0 && (
+              <ul className="list">
+                {partners.map((p) => <li key={p.href}><span>🤝 {p.name}</span><a href={p.href}>Partner dashboard</a></li>)}
+              </ul>
+            )}
+            {list.length || partners.length ? (
               <>
-                <div className="ok small">You&apos;re in. These are saved on this device under &quot;Your celebrations&quot; too.</div>
+                {list.length > 0 && <div className="ok small">You&apos;re in. These are saved on this device under &quot;Your celebrations&quot; too.</div>}
                 <ul className="list">
                   {list.map((h) => (
                     <li key={h.slug}><span>{h.title}</span><a href={`/h/${h.slug}?key=${encodeURIComponent(h.key)}`}>Open dashboard</a></li>
@@ -93,7 +101,7 @@ export default function HostLogin() {
               </>
             ) : (
               <div className="panel">
-                <p>We couldn&apos;t find any celebrations for {email}. Celebrations created before email sign-in was added need the private link. <Link href="/contact">Contact us</Link> if you&apos;re stuck.</p>
+                <p>We couldn&apos;t find any celebrations for {email}. Celebrations created before email sign-in was added need the private link. <Link href="/help?topic=host">Contact us</Link> if you&apos;re stuck.</p>
               </div>
             )}
           </div>

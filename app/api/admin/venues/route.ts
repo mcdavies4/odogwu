@@ -34,3 +34,18 @@ export async function POST(req: Request) {
     clientLink: `${site}/host/new?venue=${slug}`,
   });
 }
+
+// Admin only: change a partner's share.
+export async function PATCH(req: Request) {
+  if (!(await isAdmin(req.headers.get("x-admin-key"), clientId(req.headers)))) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  const body = await req.json().catch(() => ({}));
+  const pct = Number(body.sharePercent);
+  if (typeof body.slug !== "string" || !Number.isFinite(pct) || pct < 0 || pct > 5) {
+    return NextResponse.json({ error: "Share must be between 0% and 5%." }, { status: 400 });
+  }
+  const { error } = await supabaseAdmin().from("venues").update({ share_bps: Math.round(pct * 100) }).eq("slug", body.slug);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
+}

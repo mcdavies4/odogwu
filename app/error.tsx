@@ -11,6 +11,7 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
       <h1 style={{ fontSize: 28 }}>Something went wrong</h1>
       <p className="muted">Nothing was charged. Try again, and if it keeps happening, refresh the page.</p>
       <button className="btn" onClick={() => reset()}>Try again</button>
+      <a href="/help" className="btn btn-ghost">Get help</a>
     </main>
   );
 }

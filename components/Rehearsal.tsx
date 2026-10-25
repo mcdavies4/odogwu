@@ -7,7 +7,7 @@ type Item = { id: string; title: string; how: string; link?: { label: string; hr
 export function Rehearsal({ slug, hostKey, payee, bank }: { slug: string; hostKey: string; payee: string; bank: string }) {
   const k = encodeURIComponent(hostKey);
   const items: Item[] = [
-    { id: "payee", title: "Payout name is right", how: `Money goes to ${payee} (${bank}). If that's wrong, create a new celebration with the right account before guests arrive.` },
+    { id: "payee", title: "Payout name is right", how: `Money goes to ${payee} (${bank}). If that's wrong, use "Change payout account" on this page before guests arrive.` },
     { id: "wall", title: "Spray wall on the projector", how: "Open the wall on the laptop connected to the projector or TV, then tap Full screen.", link: { label: "Open spray wall", href: `/e/${slug}/wall`, blank: true } },
     { id: "stress", title: "Laptop can handle a busy party", how: "On that same laptop, open the stress test. If the notes fall smoothly, it's ready.", link: { label: "Run stress test", href: "/demo/wall?stress=60", blank: true } },
     { id: "sound", title: "Sound works through the speakers", how: "On the wall, tap Sound on and check you hear the chime through the venue's speakers." },

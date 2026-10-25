@@ -19,7 +19,7 @@ export function SprayScreen({ slug, celebrant, reference, title, nowDancing = nu
   const wallHref = isDemo ? "/demo/wall" : `/e/${slug}/wall`;
   const help = (
     <p className="spray-help">
-      Need help? <a href="/contact">Contact us</a>
+      Need help? <a href={!isDemo && reference ? `/help?ref=${encodeURIComponent(reference)}#pack` : "/help"}>Get help</a>
       {!isDemo && reference && <> · Ref <code>{reference}</code></>}
     </p>
   );

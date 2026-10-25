@@ -19,7 +19,7 @@ export function Footer() {
         <Link href="/#fees">Fees</Link>
         <Link href="/terms">Terms</Link>
         <Link href="/privacy">Privacy</Link>
-        <Link href="/contact">Help</Link>
+        <Link href="/help">Help</Link>
       </nav>
       <p className="footer-small">
         Need help? <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>

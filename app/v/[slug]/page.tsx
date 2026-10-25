@@ -11,7 +11,7 @@ import { CopyLink } from "@/components/CopyLink";
 import { InstallButton } from "@/components/InstallButton";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Venue dashboard · Odogwu", robots: { index: false } };
+export const metadata = { title: "Partner dashboard · Odogwu", robots: { index: false } };
 
 const day = (iso: string | null) =>
   iso ? new Date(iso + (iso.length === 10 ? "T12:00:00" : "")).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—";
@@ -44,11 +44,11 @@ export default async function VenueDashboard({
           <h1 style={{ fontSize: 32 }}>{venue.name}</h1>
           {venue.city && <p className="muted">{venue.city}</p>}
         </div>
-        <div className="ok small">Bookmark this page. It&apos;s your private venue link.</div>
+        <div className="ok small">Bookmark this page. It&apos;s your private partner link. Lost it? Use Sign in on Odogwu with your partner email.</div>
 
         <div className="stats report-stats">
           <div className="stat"><b>{events.length}</b><span>Celebrations</span></div>
-          <div className="stat"><b>{naira(total)}</b><span>Sprayed at your venue</span></div>
+          <div className="stat"><b>{naira(total)}</b><span>Sprayed at your celebrations</span></div>
           <div className="stat"><b>{naira(earned)}</b><span>Your earnings ({sharePct(venue.share_bps)}%)</span></div>
           <div className="stat"><b>{events.filter((e) => e.is_open).length}</b><span>Open now</span></div>
         </div>

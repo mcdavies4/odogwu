@@ -8,6 +8,7 @@ import { siteUrl } from "@/lib/events";
 import { earnings, sharePct, venueEvents, type Venue } from "@/lib/venues";
 import { naira } from "@/lib/money";
 import { Logo } from "@/components/Note";
+import { ShareEdit } from "@/components/ShareEdit";
 import { VenueAdmin } from "@/components/VenueAdmin";
 import { CopyLink } from "@/components/CopyLink";
 
@@ -31,7 +32,8 @@ export default async function VenuesAdmin({ searchParams }: { searchParams: Prom
         <Link href={`/admin/visits?key=${encodeURIComponent(key!)}`} className="btn btn-ghost" style={{ minHeight: 44 }}>Demo visits</Link>
       </header>
       <main className="wrap wrap-wide stack">
-        <h1 style={{ fontSize: 30 }}>Venue partners</h1>
+        <h1 style={{ fontSize: 30 }}>Partners</h1>
+        <p className="muted small">Venues and planners can sign themselves up at /partners. Add one by hand below if you need to.</p>
         {error && <div className="error">Couldn&apos;t load venues. Run supabase/features.sql in Supabase first.</div>}
         <VenueAdmin adminKey={key!} />
 
@@ -47,8 +49,8 @@ export default async function VenuesAdmin({ searchParams }: { searchParams: Prom
                   const total = evs.reduce((s: number, e: { total: number }) => s + e.total, 0);
                   return (
                     <tr key={v.id}>
-                      <td>{v.name}{v.city ? `, ${v.city}` : ""}</td>
-                      <td>{sharePct(v.share_bps)}%</td>
+                      <td>{v.name}{v.city ? `, ${v.city}` : ""}{(v as Venue & { kind?: string; source?: string }).kind === "planner" ? " · planner" : ""}{(v as Venue & { source?: string }).source === "self" ? " · signed up" : ""}</td>
+                      <td><ShareEdit slug={v.slug} adminKey={key!} pct={sharePct(v.share_bps)} /></td>
                       <td>{evs.length}</td>
                       <td>{naira(total)}</td>
                       <td><strong>{naira(earnings(total, v.share_bps))}</strong></td>
