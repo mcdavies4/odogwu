@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { isValidWebhook } from "@/lib/paystack";
 import { confirmPayment } from "@/lib/payments";
-import { confirmThemePayment } from "@/lib/themePayments";
-import { logIncident } from "@/lib/ops";
 
 // Paystack → Settings → API Keys & Webhooks → Webhook URL: https://YOUR-DOMAIN/api/paystack/webhook
 export async function POST(req: Request) {
@@ -18,15 +16,8 @@ export async function POST(req: Request) {
   }
   if (event.event === "charge.success" && event.data?.reference) {
     try {
-      const ref = event.data.reference;
-      // Both re-verify with Paystack before trusting anything.
-      if (ref.startsWith("odt_")) await confirmThemePayment(ref);
-      else await confirmPayment(ref);
-    } catch (e) {
-      await logIncident("webhook_failed", { reference: event.data.reference, error: String(e) }, {
-        title: "A Paystack webhook failed",
-        lines: [`Reference: ${event.data.reference}`, `Error: ${String(e)}`, "Paystack retries automatically, and the morning check re-confirms it too."],
-      });
+      await confirmPayment(event.data.reference); // re-verifies with Paystack
+    } catch {
       return NextResponse.json({ error: "retry" }, { status: 500 }); // Paystack will retry
     }
   }

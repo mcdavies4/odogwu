@@ -1,0 +1,64 @@
+{
+  "packageId": "online.odogwu.app",
+  "host": "odogwu.online",
+  "name": "Odogwu: spray money from your phone",
+  "launcherName": "Odogwu",
+  "display": "standalone",
+  "themeColor": "#2A0820",
+  "themeColorDark": "#2A0820",
+  "navigationColor": "#2A0820",
+  "navigationColorDark": "#2A0820",
+  "navigationDividerColor": "#2A0820",
+  "navigationDividerColorDark": "#2A0820",
+  "backgroundColor": "#2A0820",
+  "enableNotifications": false,
+  "startUrl": "/?source=android",
+  "iconUrl": "https://odogwu.online/icon-512.png",
+  "maskableIconUrl": "https://odogwu.online/icon-maskable-512.png",
+  "monochromeIconUrl": "https://odogwu.online/icon-monochrome-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./odogwu-upload.keystore",
+    "alias": "upload"
+  },
+  "appVersionName": "2.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "Create a celebration",
+      "shortName": "Create",
+      "url": "/host/new",
+      "chosenIconUrl": "https://odogwu.online/icon-192.png"
+    },
+    {
+      "name": "Sign in",
+      "shortName": "Sign in",
+      "url": "/host/login",
+      "chosenIconUrl": "https://odogwu.online/icon-192.png"
+    },
+    {
+      "name": "Help",
+      "shortName": "Help",
+      "url": "/help",
+      "chosenIconUrl": "https://odogwu.online/icon-192.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-core",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": false,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "minSdkVersion": 21,
+  "orientation": "portrait",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [
+    "www.odogwu.online"
+  ],
+  "retainedBundles": [],
+  "displayOverride": [],
+  "appVersion": "2.0.0"
+}

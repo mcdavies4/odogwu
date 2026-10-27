@@ -1,4 +1,3 @@
-import "server-only";
 import { randomBytes } from "crypto";
 
 const ALPHA = "abcdefghjkmnpqrstuvwxyz23456789";
@@ -22,5 +21,3 @@ export function makeSlug(name: string): string {
 
 export const makeHostKey = () => pick(24);
 export const makeReference = () => `odg_${Date.now().toString(36)}_${pick(8)}`;
-/** Premium-theme payments use their own prefix so the webhook can tell them apart. */
-export const makeThemeReference = () => `odt_${Date.now().toString(36)}_${pick(8)}`;

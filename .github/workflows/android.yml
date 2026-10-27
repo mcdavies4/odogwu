@@ -1,0 +1,83 @@
+# Builds the Odogwu Android app (a Trusted Web Activity for odogwu.online) on GitHub's servers.
+# Run it from GitHub → Actions → "Android app" → Run workflow. Download the result from the run page.
+#
+# Secrets (Settings → Secrets and variables → Actions → Secrets):
+#   ANDROID_KEYSTORE_BASE64   your upload keystore, base64-encoded
+#   ANDROID_KEYSTORE_PASSWORD keystore password
+#   ANDROID_KEY_ALIAS         key alias (e.g. upload)
+#   ANDROID_KEY_PASSWORD      key password
+# Variable (same page → Variables), optional:
+#   ANDROID_APP_ID            package name; set it to the OLD Odogwu app's package to update that Play listing
+name: Android app
+
+on:
+  workflow_dispatch:
+    inputs:
+      versionCode:
+        description: "Version code (whole number, higher than every version already on Google Play)"
+        required: true
+        default: "100"
+      versionName:
+        description: "Version name shown on Google Play"
+        required: true
+        default: "2.0.0"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Restore the signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then echo "::error::Add the ANDROID_KEYSTORE_BASE64 secret first (see android/README.md)"; exit 1; fi
+          echo "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/upload.keystore"
+
+      - name: Build the app (Play bundle + test APK)
+        env:
+          ODOGWU_KEYSTORE_FILE: ${{ runner.temp }}/upload.keystore
+          ODOGWU_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ODOGWU_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ODOGWU_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          APP_ID: ${{ vars.ANDROID_APP_ID || 'online.odogwu.app' }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon bundleRelease assembleRelease \
+            -PappId="$APP_ID" -PversionCode="${{ inputs.versionCode }}" -PversionName="${{ inputs.versionName }}"
+
+      - name: Show the fingerprint for assetlinks
+        env:
+          STOREPASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          APP_ID: ${{ vars.ANDROID_APP_ID || 'online.odogwu.app' }}
+        run: |
+          FP=$(keytool -list -v -keystore "$RUNNER_TEMP/upload.keystore" -storepass "$STOREPASS" -alias "$ALIAS" | grep -m1 "SHA256:" | sed 's/.*SHA256: //')
+          {
+            echo "### Odogwu Android ${{ inputs.versionName }} (code ${{ inputs.versionCode }})"
+            echo "- Package: \`$APP_ID\`"
+            echo "- Upload key SHA-256: \`$FP\`"
+            echo ""
+            echo "Download **odogwu-play-bundle** (upload the .aab to Google Play) or **odogwu-test-apk** (install on a phone to test)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: odogwu-play-bundle
+          path: android/app/build/outputs/bundle/release/*.aab
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: odogwu-test-apk
+          path: android/app/build/outputs/apk/release/*.apk

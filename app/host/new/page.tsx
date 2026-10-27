@@ -2,28 +2,18 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Footer } from "@/components/Footer";
 import { Logo } from "@/components/Note";
-import { BankPicker } from "@/components/BankPicker";
 
 type Bank = { name: string; code: string };
 
 export default function NewCelebration() {
   const router = useRouter();
   const [banks, setBanks] = useState<Bank[]>([]);
-  const [form, setForm] = useState({ title: "", celebrantName: "", eventDate: "", bankCode: "", accountNumber: "", hostPhone: "", hostEmail: "" });
+  const [form, setForm] = useState({ title: "", celebrantName: "", eventDate: "", bankCode: "", accountNumber: "", hostPhone: "" });
   const [accountName, setAccountName] = useState<string | null>(null);
   const [resolving, setResolving] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [venue, setVenue] = useState<{ slug: string; name: string } | null>(null);
-
-  // Opened from a venue partner's link (?venue=...): the celebration counts towards their share.
-  useEffect(() => {
-    const slug = new URLSearchParams(window.location.search).get("venue");
-    if (!slug || !/^[a-z0-9-]{2,60}$/.test(slug)) return;
-    fetch(`/api/venues/${slug}`).then((r) => (r.ok ? r.json() : null)).then((d) => d?.name && setVenue({ slug, name: d.name })).catch(() => {});
-  }, []);
 
   useEffect(() => {
     fetch("/api/banks").then((r) => r.json()).then((d) => setBanks(d.banks || [])).catch(() => setError("Couldn't load the bank list. Refresh to try again."));
@@ -56,7 +46,7 @@ export default function NewCelebration() {
     setError(null);
     setSaving(true);
     try {
-      const r = await fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, venue: venue?.slug }) });
+      const r = await fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
       try {
@@ -76,7 +66,6 @@ export default function NewCelebration() {
       <main className="wrap">
         <form className="stack" onSubmit={submit}>
           <h1 style={{ fontSize: 32 }}>Create a celebration</h1>
-          {venue && <p className="venue-tag">📍 At {venue.name}</p>}
           <p className="muted">Guests will see these details when they scan your code.</p>
 
           <label className="field"><span>Celebration name</span>
@@ -91,10 +80,12 @@ export default function NewCelebration() {
 
           <div className="panel stack">
             <h2 style={{ fontSize: 20 }}>Where should the money go?</h2>
-            <div className="field"><span>Bank</span>
-              <BankPicker banks={banks} loading={banks.length === 0} value={form.bankCode}
-                onChange={(code) => setForm((f) => ({ ...f, bankCode: code }))} />
-            </div>
+            <label className="field"><span>Bank</span>
+              <select className="input" required value={form.bankCode} onChange={set("bankCode")}>
+                <option value="">{banks.length ? "Choose your bank" : "Loading banks…"}</option>
+                {banks.map((b) => <option key={b.code} value={b.code}>{b.name}</option>)}
+              </select>
+            </label>
             <label className="field"><span>Account number</span>
               <input className="input" required inputMode="numeric" autoComplete="off" placeholder="10 digits" value={form.accountNumber} onChange={set("accountNumber")} />
               <small>{resolving ? "Checking with your bank…" : "Payouts land here the next working day."}</small>
@@ -102,10 +93,6 @@ export default function NewCelebration() {
             {accountName && <div className="ok">Paying out to <strong>{accountName}</strong></div>}
           </div>
 
-          <label className="field"><span>Your email</span>
-            <input className="input" type="email" inputMode="email" autoComplete="email" required placeholder="you@example.com" value={form.hostEmail} onChange={set("hostEmail")} />
-            <small>We email you your private host link, and you can sign back in with it if you lose the link.</small>
-          </label>
           <label className="field"><span>Your phone number (optional)</span>
             <input className="input" type="tel" inputMode="tel" placeholder="0803 000 0000" value={form.hostPhone} onChange={set("hostPhone")} />
           </label>
@@ -115,13 +102,9 @@ export default function NewCelebration() {
           <button className="btn btn-block" disabled={!accountName || saving}>
             {saving ? "Creating…" : "Create celebration"}
           </button>
-          <p className="small muted center">
-            Payments are processed and settled by Paystack. Odogwu never holds your money. By creating a celebration you agree to
-            our <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.
-          </p>
+          <p className="small muted center">Payments are processed and settled by Paystack. Odogwu never holds your money.</p>
         </form>
       </main>
-      <Footer />
     </>
   );
 }

@@ -2,27 +2,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Note } from "./Note";
-import { FlutterNote } from "./FlutterNote";
 import { DENOMINATIONS, naira } from "@/lib/money";
-import { ShareCard } from "./ShareCard";
-import { useLive } from "@/lib/useLive";
 
 type Phase = "checking" | "pending" | "failed" | "ready" | "error";
-type Fly = { id: number; amount: number; left: number; top: number; width: number; flyX: number };
-type Spark = { id: number; x: number; y: number; sx: number; sy: number; color: string };
 
-export function SprayScreen({ slug, celebrant, reference, title, nowDancing = null }: {
-  slug: string; celebrant: string; reference: string; title: string; nowDancing?: string | null;
-}) {
-  const isDemo = reference === "demo";
-  const live = useLive(isDemo ? null : slug, { open: true, nowDancing, theme: "classic" }, 10000);
-  const wallHref = isDemo ? "/demo/wall" : `/e/${slug}/wall`;
-  const help = (
-    <p className="spray-help">
-      Need help? <a href={!isDemo && reference ? `/help?ref=${encodeURIComponent(reference)}#pack` : "/help"}>Get help</a>
-      {!isDemo && reference && <> · Ref <code>{reference}</code></>}
-    </p>
-  );
+export function SprayScreen({ slug, celebrant, reference }: { slug: string; celebrant: string; reference: string }) {
   const [phase, setPhase] = useState<Phase>(reference ? "checking" : "error");
   const [message, setMessage] = useState<string | null>(reference ? null : "We couldn't find your spray pack.");
   const [guest, setGuest] = useState("");
@@ -105,58 +89,12 @@ export function SprayScreen({ slug, celebrant, reference, title, nowDancing = nu
     });
   }, [reference]);
 
-  // 3. The fun part: every sprayed note becomes a free-flying, tumbling note.
-  const [flying, setFlying] = useState<Fly[]>([]);
-  const [sparks, setSparks] = useState<Spark[]>([]);
-  const nextId = useRef(1);
-
-  const launch = useCallback((rect: DOMRect, dx: number, amount: number) => {
-    const id = nextId.current++;
-    setFlying((f) => [...f.slice(-14), { id, amount, left: rect.left, top: rect.top, width: rect.width, flyX: dx * 2.2 + (Math.random() * 120 - 60) }]);
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const colors = ["#f2b705", "#2fa36b", "#ff5c8a", "#fcefd9"];
-    setSparks((s) => [
-      ...s.slice(-40),
-      ...Array.from({ length: 10 }, (_, i) => {
-        const a = (Math.PI * 2 * i) / 10 + Math.random() * 0.5;
-        const d = 60 + Math.random() * 70;
-        return { id: id * 100 + i, x: cx, y: cy, sx: Math.cos(a) * d, sy: Math.sin(a) * d - 40, color: colors[i % colors.length] };
-      }),
-    ]);
-    setTimeout(() => setFlying((f) => f.filter((n) => n.id !== id)), 2400);
-    setTimeout(() => setSparks((s) => s.filter((p) => Math.floor(p.id / 100) !== id)), 800);
-  }, []);
-
-  const sprayWithFx = useCallback((rect: DOMRect | undefined, dx: number) => {
-    if (rect) launch(rect, dx, denom);
-    spray(denom);
-  }, [launch, spray, denom]);
-
-  const fx = (
-    <>
-      {flying.map((n) => (
-        <FlutterNote
-          key={n.id}
-          seed={n.id * 4099}
-          amount={n.amount}
-          mode="fly"
-          style={{ left: n.left, top: n.top, width: n.width, ["--fly-x" as string]: `${n.flyX}px` } as React.CSSProperties}
-        />
-      ))}
-      {sparks.map((p) => (
-        <span key={p.id} className="spark" style={{ left: p.x, top: p.y, background: p.color, ["--sx" as string]: `${p.sx}px`, ["--sy" as string]: `${p.sy}px` } as React.CSSProperties} />
-      ))}
-    </>
-  );
-
   if (phase === "checking") return <Centered><h1 style={{ fontSize: 26 }}>Confirming your payment…</h1></Centered>;
   if (phase === "pending")
     return (
       <Centered>
         <h1 style={{ fontSize: 26 }}>Waiting for your payment</h1>
         <p className="muted">Paid by bank transfer? It can take a minute to arrive. Keep this page open and your notes will appear.</p>
-        {help}
       </Centered>
     );
   if (phase === "failed" || phase === "error")
@@ -165,7 +103,6 @@ export function SprayScreen({ slug, celebrant, reference, title, nowDancing = nu
         <h1 style={{ fontSize: 26 }}>{phase === "failed" ? "That payment didn't go through" : "Something's missing"}</h1>
         <p className="muted">{message ?? "No money was taken for this pack. You can try again."}</p>
         <Link className="btn" href={`/e/${slug}`}>Buy a spray pack</Link>
-        {help}
       </Centered>
     );
 
@@ -175,27 +112,17 @@ export function SprayScreen({ slug, celebrant, reference, title, nowDancing = nu
         <Note amount={1000} style={{ width: 220, transform: "rotate(-8deg)" }} />
         <h1 style={{ fontSize: 28 }}>You sprayed {naira(total)}!</h1>
         <p className="muted">{celebrant} will receive it in their bank the next working day.</p>
-        <ShareCard celebrant={celebrant} title={title} amount={total} />
         {reference === "demo" ? (
-          <>
-            <button className="btn btn-block" onClick={() => { setTotal(5000); setServerRemaining(5000); }}>Spray again</button>
-            <Link className="btn btn-ghost btn-block" href="/host/new">Create your own celebration</Link>
-          </>
+          <Link className="btn btn-block" href="/host/new">Create your own celebration</Link>
         ) : (
           <Link className="btn btn-block" href={`/e/${slug}`}>Buy another pack</Link>
         )}
-        {fx}
-        {help}
       </Centered>
     );
   }
 
   return (
     <div className="spray-app">
-      <div>
-      {live.nowDancing && (
-        <div className="spray-dancing" key={live.nowDancing}>💃 On the floor: <strong>{live.nowDancing}</strong></div>
-      )}
       <div className="spray-head">
         <div>
           <div className="balance-label">Left to spray</div>
@@ -204,13 +131,10 @@ export function SprayScreen({ slug, celebrant, reference, title, nowDancing = nu
         <div className="celebrant">
           <span className="small muted">Spraying</span>
           <strong>{celebrant}</strong>
-          <a className="watch-wall" href={wallHref} target="_blank" rel="noopener">📺 Watch the wall</a>
         </div>
       </div>
-      </div>
 
-      <SwipeNote amount={denom} disabled={denom > remaining} onSpray={(rect, dx) => sprayWithFx(rect, dx)} />
-      {fx}
+      <SwipeNote amount={denom} disabled={denom > remaining} onSpray={() => spray(denom)} />
 
       <div>
         {notice && <div className="error small" role="alert" onClick={() => setNotice(null)}>{notice}</div>}
@@ -222,11 +146,9 @@ export function SprayScreen({ slug, celebrant, reference, title, nowDancing = nu
             </button>
           ))}
         </div>
-        <button type="button" className="btn btn-ghost btn-block" style={{ marginTop: 10 }} disabled={denom > remaining}
-          onClick={() => sprayWithFx(document.querySelector(".note-live")?.getBoundingClientRect(), Math.random() * 60 - 30)}>
+        <button type="button" className="btn btn-ghost btn-block" style={{ marginTop: 10 }} disabled={denom > remaining} onClick={() => spray(denom)}>
           Tap to spray {naira(denom)}
         </button>
-        {help}
       </div>
     </div>
   );
@@ -237,7 +159,7 @@ function Centered({ children }: { children: React.ReactNode }) {
 }
 
 /** The note you flick upward. Distance or a quick flick both count. */
-function SwipeNote({ amount, disabled, onSpray }: { amount: number; disabled: boolean; onSpray: (rect: DOMRect, dx: number) => void }) {
+function SwipeNote({ amount, disabled, onSpray }: { amount: number; disabled: boolean; onSpray: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const start = useRef<{ x: number; y: number; t: number } | null>(null);
   const [cls, setCls] = useState("");
@@ -270,14 +192,15 @@ function SwipeNote({ amount, disabled, onSpray }: { amount: number; disabled: bo
     const v = -dy / Math.max(1, performance.now() - start.current.t);
     start.current = null;
     if (-dy > 90 || (v > 0.55 && -dy > 30)) {
-      // Hand the note over to a free-flying copy at exactly where it was released,
-      // then put a fresh note back on the stack straight away for rapid spraying.
-      const rect = ref.current?.getBoundingClientRect();
+      setCls("fly");
+      setT(dx * 1.4, -window.innerHeight, dx / 6 - 10, 0);
       setHinted(false);
-      if (rect) onSpray(rect, dx);
-      setCls("");
-      setT(0, 0, 0, 1);
-      setCount((c) => c + 1);
+      onSpray();
+      setTimeout(() => {
+        setCls("");
+        setT(0, 0, 0, 1);
+        setCount((c) => c + 1);
+      }, 380);
     } else {
       setCls("snap");
       setT(0, 0, 0);

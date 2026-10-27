@@ -1,20 +1,11 @@
 import Link from "next/link";
-import { Footer } from "@/components/Footer";
-import { ABROAD_ENABLED } from "@/lib/flags";
-import { FeesSection } from "@/components/FeesSection";
-import { Logo } from "@/components/Note";
-import { FlutterNote } from "@/components/FlutterNote";
-import { InstallButton } from "@/components/InstallButton";
-import { MyCelebrations } from "@/components/MyCelebrations";
+import { Logo, Note } from "@/components/Note";
 
 const RAIN = [
-  { amount: 1000, left: "6%", delay: "0s" },
-  { amount: 500, left: "50%", delay: "0.9s" },
-  { amount: 200, left: "26%", delay: "1.8s" },
-  { amount: 1000, left: "62%", delay: "2.7s" },
-  { amount: 500, left: "14%", delay: "3.6s" },
-  { amount: 50, left: "44%", delay: "4.5s" },
-  { amount: 200, left: "70%", delay: "5.4s" },
+  { amount: 1000, left: "8%", delay: "0s" },
+  { amount: 500, left: "52%", delay: "1.1s" },
+  { amount: 200, left: "28%", delay: "2.2s" },
+  { amount: 1000, left: "64%", delay: "3.1s" },
 ];
 
 export default function Home() {
@@ -22,12 +13,7 @@ export default function Home() {
     <>
       <header className="topbar">
         <Link href="/" className="brand"><Logo />Odogwu</Link>
-        <div className="topbar-links">
-          <Link href="/partners" className="topbar-link">Partners</Link>
-          <Link href="/help" className="topbar-link keep">Help</Link>
-          <Link href="/host/login" className="topbar-link">Sign in</Link>
-          <Link href="/host/new" className="btn btn-ghost topbar-cta" style={{ minHeight: 44 }}>Create a celebration</Link>
-        </div>
+        <Link href="/host/new" className="btn btn-ghost" style={{ minHeight: 44 }}>Create a celebration</Link>
       </header>
 
       <section className="hero pattern">
@@ -41,25 +27,15 @@ export default function Home() {
             <div className="actions">
               <Link href="/host/new" className="btn">Create a celebration</Link>
               <Link href="/demo" className="btn btn-ghost">Try spraying</Link>
-              <InstallButton />
             </div>
           </div>
           <div className="hero-stage" aria-hidden="true">
             {RAIN.map((r, i) => (
-              <FlutterNote
-                key={i}
-                seed={i * 7919 + 13}
-                amount={r.amount}
-                mode="fall"
-                loop
-                style={{ left: r.left, ["--delay" as string]: r.delay, ["--dur" as string]: "5.4s" } as React.CSSProperties}
-              />
+              <Note key={i} amount={r.amount} className="rain-note" style={{ left: r.left, animationDelay: r.delay }} />
             ))}
           </div>
         </div>
       </section>
-
-      <MyCelebrations />
 
       <section className="section" id="how">
         <div className="two-col">
@@ -82,22 +58,16 @@ export default function Home() {
         </div>
       </section>
 
-      <FeesSection />
-
       <section className="section">
         <div className="panel stack">
           <h2 style={{ marginBottom: 0 }}>Questions people ask</h2>
-          <p><strong>What does it cost?</strong> <span className="muted">Creating a celebration is free. Guests pay a service fee of 5% + ₦100 on top of each spray pack, and the celebrant receives the full pack value. <a href="#fees">See how fees work</a>.</span></p>
+          <p><strong>What does it cost?</strong> <span className="muted">Guests pay a small service fee on top of their pack. The celebrant receives the full pack value.</span></p>
           <p><strong>What if a guest doesn&apos;t spray all their notes?</strong> <span className="muted">It&apos;s still the celebrant&apos;s. The pack is a gift the moment it&apos;s paid; spraying is the fun part.</span></p>
-          <p><strong>Can guests spray anonymously?</strong> <span className="muted">Yes. They show on the wall as &quot;Secret Odogwu 🤫&quot;. If they want, they can leave their name for the celebrant&apos;s private thank-you list only.</span></p>
-{ABROAD_ENABLED &&           <p><strong>Can family abroad spray?</strong> <span className="muted">Yes. They open the guest link from anywhere, pick their country and pay with a foreign card. Their flag shows next to their name on the wall, and they can watch it live.</span></p>}
-          <p><strong>Do we get anything to keep?</strong> <span className="muted">Every celebration gets a spray report of who gave what, and a 20-second highlight reel to post. <a href="/demo/recap">See an example reel</a>.</span></p>
-          <p><strong>Run an event centre or plan events?</strong> <span className="muted">Become a partner in two minutes: you get your own dashboard and earn a share of every spray pack at the celebrations you bring. <a href="/partners">Become a partner</a>.</span></p>
           <p><strong>When does the money arrive?</strong> <span className="muted">The next working day. A Saturday party settles on Monday.</span></p>
         </div>
       </section>
 
-      <Footer />
+      <footer className="footer">Odogwu by The 36th Solutions Ltd · Payments processed by Paystack</footer>
     </>
   );
 }

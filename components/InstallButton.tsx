@@ -1,6 +1,21 @@
 "use client";
 import { useEffect, useState } from "react";
 
+// Set NEXT_PUBLIC_PLAY_STORE_URL once the Android app is live: Android visitors then get the Play Store app instead of a home-screen shortcut.
+const PLAY_URL = process.env.NEXT_PUBLIC_PLAY_STORE_URL || "";
+
+/** True inside the Odogwu Android app (it opens the site with ?source=android, and Android marks the referrer). */
+export function inAndroidApp(): boolean {
+  try {
+    if (sessionStorage.getItem("odogwu:app") === "android") return true;
+    const yes = new URLSearchParams(location.search).get("source") === "android" || document.referrer.startsWith("android-app://");
+    if (yes) sessionStorage.setItem("odogwu:app", "android");
+    return yes;
+  } catch {
+    return false;
+  }
+}
+
 type BIPEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> };
 
 /**
@@ -13,13 +28,15 @@ export function InstallButton({ className = "btn btn-ghost", label = "Install Od
   const [isIOS, setIsIOS] = useState(false);
   const [installed, setInstalled] = useState(true); // assume installed until we check, so nothing flashes
   const [sheet, setSheet] = useState(false);
+  const [android, setAndroid] = useState(false);
 
   useEffect(() => {
     const standalone =
       window.matchMedia("(display-mode: standalone)").matches ||
       (navigator as unknown as { standalone?: boolean }).standalone === true;
-    setInstalled(standalone);
     const ua = navigator.userAgent;
+    setInstalled(standalone || inAndroidApp());
+    setAndroid(/Android/i.test(ua));
     setIsIOS(/iPhone|iPad|iPod/.test(ua) || (ua.includes("Macintosh") && "ontouchend" in document));
 
     const onPrompt = (e: Event) => { e.preventDefault(); setDeferred(e as BIPEvent); };
@@ -32,7 +49,16 @@ export function InstallButton({ className = "btn btn-ghost", label = "Install Od
     };
   }, []);
 
-  if (installed || (!deferred && !isIOS)) return null;
+  if (installed) return null;
+  // Android phones: send people to the Play Store app once it's live.
+  if (android && PLAY_URL) {
+    return (
+      <a className={className} href={PLAY_URL} target="_blank" rel="noopener">
+        <AppGlyph /> Get the Android app
+      </a>
+    );
+  }
+  if (!deferred && !isIOS) return null;
 
   async function install() {
     if (deferred) {

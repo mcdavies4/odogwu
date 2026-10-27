@@ -1,8 +1,7 @@
 // Odogwu service worker: makes the app installable and keeps the shell available
 // on patchy venue networks. Payments and spraying always go to the network.
-const CACHE = "odogwu-v3";
-const NOTES = [50, 100, 200, 500, 1000].flatMap((v) => [`/notes/${v}-front.webp`, `/notes/${v}-back.webp`]);
-const SHELL = ["/", "/offline.html", "/icon.svg", "/manifest.webmanifest", ...NOTES];
+const CACHE = "odogwu-v1";
+const SHELL = ["/", "/offline.html", "/icon.svg", "/manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -24,7 +23,7 @@ self.addEventListener("fetch", (e) => {
     e.respondWith(fetch(req).catch(() => caches.match("/offline.html")));
     return;
   }
-  if (url.pathname.startsWith("/_next/static/") || /\.(svg|png|webp|webmanifest)$/.test(url.pathname)) {
+  if (url.pathname.startsWith("/_next/static/") || /\.(svg|png|webmanifest)$/.test(url.pathname)) {
     e.respondWith(
       caches.match(req).then((hit) =>
         hit || fetch(req).then((res) => {
