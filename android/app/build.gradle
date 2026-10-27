@@ -56,7 +56,7 @@ android {
     namespace "online.odogwu.app"
     defaultConfig {
         applicationId twaManifest.applicationId
-        minSdkVersion 21
+        minSdkVersion 24
         targetSdkVersion 36
         // Every Play upload needs a higher versionCode than the last one (and than the old app's).
         versionCode((project.findProperty('versionCode') ?: '1').toString().toInteger())
