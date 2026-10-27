@@ -16,6 +16,7 @@ const TOPICS: [string, string][] = [
   ["wall", "Spray wall or projector"],
   ["partner", "Partnering (venue or planner)"],
   ["feedback", "Feedback after a celebration"],
+  ["delete", "Delete my account and data"],
   ["other", "Something else"],
 ];
 

@@ -57,7 +57,7 @@ export default function Privacy() {
       <p>
         Unfinished payments are deleted after 7 days. Celebration records are kept for up to 24 months after the event so
         hosts can download their reports, then deleted, unless the law requires us to keep payment records longer. You can
-        ask us to delete your data sooner.
+        ask us to delete your data sooner on our <a href="/delete-account">delete your data</a> page.
       </p>
 
       <h2>Your rights</h2>
