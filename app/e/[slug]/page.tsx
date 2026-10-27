@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import { getPublicEvent } from "@/lib/events";
-import { feePercent } from "@/lib/money";
+import { feeFlat, feePercent } from "@/lib/money";
 import { GuestPay } from "@/components/GuestPay";
 import { Logo } from "@/components/Note";
+import { Footer } from "@/components/Footer";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,7 @@ export default async function GuestPage({ params }: { params: Promise<{ slug: st
     : null;
 
   return (
+    <>
     <main className="wrap stack">
       <div className="brand"><Logo />Odogwu</div>
       <div>
@@ -32,10 +34,12 @@ export default async function GuestPage({ params }: { params: Promise<{ slug: st
         Money goes to <strong>{ev.account_name}</strong> ({ev.bank_name}), checked with the bank.
       </div>
       {ev.is_open ? (
-        <GuestPay slug={ev.slug} celebrant={ev.celebrant_name} feePct={feePercent()} />
+        <GuestPay slug={ev.slug} celebrant={ev.celebrant_name} feePct={feePercent()} feeFlat={feeFlat()} />
       ) : (
         <div className="panel"><p>Spraying has closed for this celebration. Thank you for coming!</p></div>
       )}
     </main>
+    <Footer />
+    </>
   );
 }

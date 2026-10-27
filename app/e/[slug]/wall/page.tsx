@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getPublicEvent, siteUrl } from "@/lib/events";
-import { supabaseAdmin } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase-server";
+import { fetchAll } from "@/lib/report";
 import { SprayWall, type Spray } from "@/components/SprayWall";
 
 export const dynamic = "force-dynamic";
@@ -10,12 +11,11 @@ export default async function WallPage({ params }: { params: Promise<{ slug: str
   const ev = await getPublicEvent(slug);
   if (!ev) notFound();
 
-  const { data } = await supabaseAdmin()
-    .from("sprays")
-    .select("id,guest_name,amount_naira,created_at")
-    .eq("event_id", ev.id)
-    .order("id", { ascending: true })
-    .limit(20000);
+  // Every spray so far, so a reloaded wall shows the true total even after 1,000+ notes.
+  const db = supabaseAdmin();
+  const data = await fetchAll<Spray>((f, t) =>
+    db.from("sprays").select("id,guest_name,amount_naira,created_at").eq("event_id", ev.id).order("id", { ascending: true }).range(f, t)
+  ).catch(() => [] as Spray[]);
 
   return (
     <SprayWall
@@ -23,6 +23,12 @@ export default async function WallPage({ params }: { params: Promise<{ slug: str
       title={ev.title}
       celebrant={ev.celebrant_name}
       guestUrl={`${siteUrl()}/e/${ev.slug}`}
+      payee={ev.account_name}
+      slug={ev.slug}
+      theme={ev.theme}
+      nowDancing={ev.now_dancing}
+      venueName={ev.venue_name}
+      open={ev.is_open}
       initial={(data ?? []) as Spray[]}
     />
   );

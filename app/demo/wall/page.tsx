@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 // A pretend party: fake guests spray in bursts so you can see (and show off) the wall.
 // ?ref=venue-name tags the visit so you can see which venue opened it (see /admin/visits).
 // ?stress=60 fires 60 sprays a second to test a laptop before an event.
-// ?theme=wedding|praise|birthday|naija previews a premium wall theme.
+// ?theme=<id> previews a wall theme (see lib/themes.ts).
 export default async function DemoWall({ searchParams }: { searchParams: Promise<{ stress?: string; ref?: string; theme?: string }> }) {
   const { stress, ref, theme } = await searchParams;
   const rate = Math.min(500, Math.max(0, Number(stress) || 0));

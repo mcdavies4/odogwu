@@ -1,19 +1,32 @@
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
-import { initializeTransaction } from "@/lib/paystack";
+import { supabaseAdmin } from "@/lib/supabase-server";
+import { initializeTransaction, PaystackError } from "@/lib/paystack";
 import { makeReference } from "@/lib/ids";
 import { feeKobo, MAX_PACK_NAIRA, MIN_PACK_NAIRA } from "@/lib/money";
+import { allow, cleanText, clientId, nameProblem, tooMany } from "@/lib/security";
+import { ANONYMOUS } from "@/lib/hype";
+import { flagOf, isCountry } from "@/lib/countries";
+import { ABROAD_ENABLED } from "@/lib/flags";
+import { logIncident } from "@/lib/ops";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: Request) {
+  // Generous: a whole hall can share one Wi-Fi or mobile-network address.
+  if (!(await allow(`pay:${clientId(req.headers)}`, 300, 60))) return tooMany();
   const body = await req.json().catch(() => ({}));
-  const slug = String(body.slug || "");
-  const guestName = String(body.guestName || "").trim().replace(/\s+/g, " ").slice(0, 40);
+  const slug = cleanText(body.slug, 60);
+  const anonymous = body.anonymous === true;
+  const typedName = cleanText(body.guestName, 40);
+  // Anonymous guests appear as "Anonymous" everywhere public; their name (if any) stays private.
+  // Guests spraying from abroad get their country's flag next to their name on the wall.
+  const from = ABROAD_ENABLED && isCountry(body.from) ? body.from : null;
+  const guestName = anonymous ? ANONYMOUS : from ? `${typedName} ${flagOf(from)}` : typedName;
   const packNaira = Math.round(Number(body.packNaira));
-  let guestEmail = String(body.guestEmail || "").trim().toLowerCase();
+  let guestEmail = cleanText(body.guestEmail, 120).toLowerCase();
 
-  if (!guestName) return NextResponse.json({ error: "Tell the celebrant who's spraying!" }, { status: 400 });
+  const nameIssue = anonymous ? (typedName ? nameProblem(typedName) : null) : nameProblem(typedName);
+  if (nameIssue) return NextResponse.json({ error: nameIssue }, { status: 400 });
   if (!Number.isFinite(packNaira) || packNaira < MIN_PACK_NAIRA || packNaira > MAX_PACK_NAIRA) {
     return NextResponse.json({ error: `Spray packs are ₦${MIN_PACK_NAIRA.toLocaleString()} and up.` }, { status: 400 });
   }
@@ -40,14 +53,21 @@ export async function POST(req: Request) {
   const amountKobo = packNaira * 100;
   const fee = feeKobo(packNaira);
 
-  const { error } = await db.from("payments").insert({
+  const row: Record<string, unknown> = {
     event_id: ev.id,
     reference,
     guest_name: guestName,
     guest_email: guestEmail,
     amount_kobo: amountKobo,
     fee_kobo: fee,
-  });
+  };
+  let { error } = await db.from("payments").insert(
+    anonymous ? { ...row, anonymous: true, private_name: typedName || null } : row
+  );
+  if (error && anonymous) {
+    // anonymous.sql not installed yet: still save them as "Anonymous" (privacy first).
+    ({ error } = await db.from("payments").insert(row));
+  }
   if (error) return NextResponse.json({ error: "Could not start payment" }, { status: 500 });
 
   try {
@@ -57,12 +77,22 @@ export async function POST(req: Request) {
       reference,
       subaccount: ev.subaccount_code,
       platformChargeKobo: fee,
-      callbackUrl: `${site}/e/${ev.slug}/spray?reference=${reference}`,
-      metadata: { event: ev.slug, guest_name: guestName, pack_naira: packNaira },
+      // Paystack appends ?trxref=…&reference=… itself, so no query string here.
+      callbackUrl: `${site}/e/${ev.slug}/spray`,
+      metadata: { event: ev.slug, guest_name: guestName, anonymous, from, pack_naira: packNaira },
     });
     return NextResponse.json({ url: tx.authorization_url, reference });
   } catch (e) {
     await db.from("payments").update({ status: "failed" }).eq("reference", reference);
-    return NextResponse.json({ error: (e as Error).message }, { status: 502 });
+    console.error("pay init failed", e);
+    if (!(e instanceof PaystackError) || (e as PaystackError).status >= 401) {
+      await logIncident("pay_init_failed", { slug: ev.slug, error: String(e) }, {
+        title: "Guests can't start a payment",
+        lines: [`Celebration: ${ev.title} (${ev.slug})`, `Error: ${String(e)}`, "Check the Paystack dashboard and your PAYSTACK_SECRET_KEY in Vercel."],
+      });
+    }
+    // Paystack's own messages are written for people; network errors are not.
+    const msg = e instanceof PaystackError ? e.message : "Couldn't reach the payment provider. Please try again in a moment.";
+    return NextResponse.json({ error: msg }, { status: 502 });
   }
 }

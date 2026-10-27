@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { RegisterSW } from "@/components/RegisterSW";
+import { SafeAnalytics } from "@/components/SafeAnalytics";
 
 export const metadata: Metadata = {
   title: "Odogwu — spray money from your phone",
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {children}
         <RegisterSW />
+        <SafeAnalytics />
       </body>
     </html>
   );

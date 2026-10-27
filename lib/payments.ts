@@ -1,5 +1,7 @@
-import { supabaseAdmin } from "./supabase";
+import "server-only";
+import { supabaseAdmin } from "./supabase-server";
 import { verifyTransaction } from "./paystack";
+import { logIncident } from "./ops";
 
 export type PaymentRow = {
   id: string;
@@ -37,6 +39,15 @@ export async function confirmPayment(reference: string): Promise<PaymentRow | nu
       .select("id,event_id,reference,guest_name,amount_kobo,fee_kobo,status")
       .single<PaymentRow>();
     return updated ?? { ...payment, status: "success" };
+  }
+
+  if (tx.status === "success") {
+    // Paid, but not what we asked for: never unlock notes, and tell you.
+    await logIncident("amount_mismatch", { reference, expected, got: tx.amount, currency: tx.currency }, {
+      title: "A payment came in at the wrong amount",
+      lines: [`Reference: ${reference}`, `Expected ${expected / 100} NGN, Paystack says ${Number(tx.amount) / 100} ${tx.currency}.`, "The guest's notes are locked until you check it in Paystack."],
+    });
+    return payment;
   }
 
   if (["failed", "abandoned", "reversed"].includes(tx.status)) {
