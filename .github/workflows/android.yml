@@ -81,3 +81,34 @@ jobs:
         with:
           name: odogwu-test-apk
           path: android/app/build/outputs/apk/release/*.apk
+
+  # Installs the test APK on an Android 11 emulator, taps the icon and records what happens.
+  launch-test:
+    needs: build
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: odogwu-test-apk
+          path: apk
+      - name: Enable KVM for the emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install and open the app on Android 11
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          script: bash android/ci-launch-test.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: odogwu-launch-test
+          path: launch-test/
+

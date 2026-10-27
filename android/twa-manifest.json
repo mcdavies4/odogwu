@@ -44,7 +44,7 @@
     }
   ],
   "generatorApp": "bubblewrap-core",
-  "fallbackType": "customtabs",
+  "fallbackType": "webview",
   "features": {},
   "alphaDependencies": {
     "enabled": false
