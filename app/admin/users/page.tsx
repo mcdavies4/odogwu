@@ -1,345 +1,82 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { hasAdminSession } from "@/lib/admin-session";
 import { supabaseAdmin } from "@/lib/supabase-server";
-import { clientId } from "@/lib/security";
-import { isAdmin } from "@/lib/admin";
 import { Logo } from "@/components/Note";
-import { naira } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
-export const metadata = {
-  title: "User intelligence · Odogwu",
-  robots: { index: false },
-};
+export const metadata = { title: "User directory · Odogwu", robots: { index: false, follow: false } };
 
-type EventRow = {
-  id: string;
-  slug: string;
-  title: string;
-  event_date: string | null;
-  host_email?: string | null;
-  host_phone?: string | null;
-  created_at: string;
-  is_open?: boolean;
-  venue_id?: string | null;
-};
+type UserRow = { id: string; name: string; email: string; roles: string[]; detail: string; createdAt: string | null };
 
-type PaymentRow = {
-  event_id: string;
-  guest_name: string;
-  guest_email: string;
-  amount_kobo: number;
-  status: string;
-  paid_at: string | null;
-  created_at: string;
-};
-
-type PartnerRow = {
-  id: string;
-  name: string;
-  kind?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  city?: string | null;
-  source?: string | null;
-  created_at: string;
-};
-
-type UserRecord = {
-  key: string;
-  email: string;
-  name: string;
-  roles: Set<string>;
-  firstSeen: string;
-  eventsCreated: number;
-  successfulPayments: number;
-  successfulValueKobo: number;
-  lastActivity: string;
-  source: string;
-};
-
-const when = (value?: string | null) =>
-  value
-    ? new Date(value).toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      })
-    : "—";
-
-const normalEmail = (value?: string | null) => (value || "").trim().toLowerCase();
-
-const roleLabel = (role: string) =>
-  ({ guest: "Guest", host: "Host", planner: "Event planner", venue: "Venue partner" })[role] || role;
-
-export default async function AdminUsers({
-  searchParams,
-}: {
-  searchParams: Promise<{ key?: string; q?: string; role?: string }>;
-}) {
-  const { key, q = "", role = "all" } = await searchParams;
-  if (!(await isAdmin(key, clientId(await headers())))) notFound();
-
+export default async function AdminUsers({ searchParams }: { searchParams: Promise<{ q?: string; role?: string }> }) {
+  if (!(await hasAdminSession())) redirect("/admin/login");
+  const { q = "", role = "all" } = await searchParams;
   const db = supabaseAdmin();
-
-  // Never select host_key, venue_key, bank account details, or payment references
-  // for this dashboard. This is an operational directory, not a secrets viewer.
-  const [eventResult, paymentResult, partnerResult] = await Promise.all([
-    db
-      .from("events")
-      .select("id,slug,title,event_date,host_email,host_phone,created_at,is_open,venue_id")
-      .order("created_at", { ascending: false })
-      .limit(3000),
-    db
-      .from("payments")
-      .select("event_id,guest_name,guest_email,amount_kobo,status,paid_at,created_at")
-      .order("created_at", { ascending: false })
-      .limit(5000),
-    db
-      .from("venues")
-      .select("id,name,kind,email,phone,city,source,created_at")
-      .order("created_at", { ascending: false })
-      .limit(2000),
+  const [eventsResult, paymentsResult, partnersResult] = await Promise.all([
+    db.from("events").select("id,slug,title,celebrant_name,event_date,host_phone,created_at").order("created_at", { ascending: false }).limit(5000),
+    db.from("payments").select("id,event_id,guest_name,guest_email,status,created_at,paid_at").order("created_at", { ascending: false }).limit(10000),
+    db.from("venues").select("id,name,email,phone,kind,city,created_at").order("created_at", { ascending: false }).limit(5000),
   ]);
+  const users = new Map<string, UserRow>();
 
-  // Older installations may not have run the host-email or partner metadata
-  // migrations. Keep the dashboard useful without pretending those fields exist.
-  let events = (eventResult.data ?? []) as EventRow[];
-  if (eventResult.error) {
-    const fallback = await db
-      .from("events")
-      .select("id,slug,title,event_date,host_phone,created_at,is_open,venue_id")
-      .order("created_at", { ascending: false })
-      .limit(3000);
-    events = (fallback.data ?? []) as EventRow[];
+  for (const p of paymentsResult.data ?? []) {
+    if (p.status !== "success") continue;
+    const email = String(p.guest_email ?? "").trim().toLowerCase();
+    if (!email) continue;
+    const id = `email:${email}`;
+    const row = users.get(id) ?? { id, name: String(p.guest_name ?? "Guest"), email, roles: [], detail: "Guest checkout · successful payment", createdAt: p.created_at ?? null };
+    if (!row.roles.includes("Guest")) row.roles.push("Guest");
+    if (p.created_at && (!row.createdAt || p.created_at < row.createdAt)) row.createdAt = p.created_at;
+    users.set(id, row);
   }
 
-  const payments = (paymentResult.data ?? []) as PaymentRow[];
-  const partners = (partnerResult.data ?? []) as PartnerRow[];
-  const users = new Map<string, UserRecord>();
-  const eventById = new Map(events.map((event) => [event.id, event]));
-
-  function touch(
-    emailValue: string | null | undefined,
-    roleName: string,
-    nameValue: string | null | undefined,
-    activity: string,
-    source = "Not recorded",
-  ) {
-    const email = normalEmail(emailValue);
-    if (!email) return null;
-    let user = users.get(email);
-    if (!user) {
-      user = {
-        key: email,
-        email,
-        name: (nameValue || "").trim() || "Name not recorded",
-        roles: new Set<string>(),
-        firstSeen: activity,
-        eventsCreated: 0,
-        successfulPayments: 0,
-        successfulValueKobo: 0,
-        lastActivity: activity,
-        source,
-      };
-      users.set(email, user);
-    }
-    user.roles.add(roleName);
-    if (activity && (!user.firstSeen || activity < user.firstSeen)) user.firstSeen = activity;
-    if (activity && (!user.lastActivity || activity > user.lastActivity)) user.lastActivity = activity;
-    if (user.name === "Name not recorded" && nameValue) user.name = nameValue;
-    if (user.source === "Not recorded" && source !== "Not recorded") user.source = source;
-    return user;
+  for (const e of eventsResult.data ?? []) {
+    const phone = String(e.host_phone ?? "").trim();
+    if (!phone) continue;
+    const id = `phone:${phone}`;
+    const row = users.get(id) ?? { id, name: String(e.celebrant_name ?? "Host"), email: "", roles: [], detail: "", createdAt: e.created_at ?? null };
+    if (!row.roles.includes("Host")) row.roles.push("Host");
+    row.detail = [row.detail, `Event: ${e.title} (${e.slug})`].filter(Boolean).join(" · ");
+    if (e.created_at && (!row.createdAt || e.created_at < row.createdAt)) row.createdAt = e.created_at;
+    users.set(id, row);
   }
 
-  // Hosts can only be identified by email when the host-email migration exists.
-  for (const event of events) {
-    const user = touch(event.host_email, "host", event.title, event.created_at);
-    if (user) user.eventsCreated += 1;
-  }
-
-  // Guest identity is based on the email used at checkout. This measures known
-  // checkout users, not every person who attended an event.
-  for (const payment of payments) {
-    const event = eventById.get(payment.event_id);
-    const user = touch(
-      payment.guest_email,
-      "guest",
-      payment.guest_name,
-      payment.paid_at || payment.created_at,
-      "Checkout (source not attributed)",
-    );
-    if (!user) continue;
-    if (payment.status === "success") {
-      user.successfulPayments += 1;
-      user.successfulValueKobo += Number(payment.amount_kobo || 0);
-    }
-    if (event?.venue_id) user.source = user.source === "Not recorded" ? "Venue partner link" : user.source;
-  }
-
-  for (const partner of partners) {
-    const partnerRole = partner.kind === "planner" ? "planner" : "venue";
-    const user = touch(partner.email, partnerRole, partner.name, partner.created_at, partner.source || "Partner sign-up");
-    if (user && partner.kind === "planner") user.roles.add("planner");
+  for (const partner of partnersResult.data ?? []) {
+    const email = String(partner.email ?? "").trim().toLowerCase();
+    const id = email ? `email:${email}` : `partner:${partner.id}`;
+    const row = users.get(id) ?? { id, name: String(partner.name ?? "Partner"), email, roles: [], detail: "", createdAt: partner.created_at ?? null };
+    const roleName = partner.kind === "planner" ? "Event planner" : "Venue partner";
+    if (!row.roles.includes(roleName)) row.roles.push(roleName);
+    row.detail = [row.detail, [partner.city, partner.phone].filter(Boolean).join(" · ")].filter(Boolean).join(" · ");
+    if (partner.created_at && (!row.createdAt || partner.created_at < row.createdAt)) row.createdAt = partner.created_at;
+    users.set(id, row);
   }
 
   const needle = q.trim().toLowerCase();
-  const validRoles = ["all", "guest", "host", "planner", "venue"];
-  const selectedRole = validRoles.includes(role) ? role : "all";
-  const filtered = [...users.values()]
-    .filter((user) => {
-      const matchesQuery =
-        !needle ||
-        user.email.includes(needle) ||
-        user.name.toLowerCase().includes(needle);
-      const matchesRole = selectedRole === "all" || user.roles.has(selectedRole);
-      return matchesQuery && matchesRole;
-    })
-    .sort((a, b) => b.lastActivity.localeCompare(a.lastActivity));
-
-  const guestCount = [...users.values()].filter((user) => user.roles.has("guest")).length;
-  const hostCount = [...users.values()].filter((user) => user.roles.has("host")).length;
-  const plannerCount = [...users.values()].filter((user) => user.roles.has("planner")).length;
-  const successfulPayments = payments.filter((payment) => payment.status === "success");
-  const totalValueKobo = successfulPayments.reduce((sum, payment) => sum + Number(payment.amount_kobo || 0), 0);
-
-  const queryString = (nextRole: string) => {
-    const params = new URLSearchParams();
-    if (key) params.set("key", key);
-    if (q) params.set("q", q);
-    if (nextRole !== "all") params.set("role", nextRole);
-    return `/admin/users?${params.toString()}`;
-  };
+  const filtered = [...users.values()].filter((u) => {
+    const matchesQuery = !needle || [u.name, u.email, u.detail, u.roles.join(" ")].some((v) => v.toLowerCase().includes(needle));
+    const matchesRole = role === "all" || u.roles.includes(role);
+    return matchesQuery && matchesRole;
+  }).sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
 
   return (
     <>
-      <header className="topbar">
-        <Link href="/" className="brand"><Logo />Odogwu</Link>
-        <nav style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <Link href={`/admin/venues?key=${encodeURIComponent(key || "")}`} className="btn btn-ghost" style={{ minHeight: 44 }}>Partners</Link>
-          <Link href={`/admin/visits?key=${encodeURIComponent(key || "")}`} className="btn btn-ghost" style={{ minHeight: 44 }}>Demo visits</Link>
-        </nav>
-      </header>
-
+      <header className="topbar"><Link href="/admin" className="brand"><Logo />Odogwu Admin</Link><form action="/api/admin/logout" method="post"><button className="btn btn-ghost" type="submit">Log out</button></form></header>
       <main className="wrap wrap-wide stack">
-        <div className="stack" style={{ gap: 6 }}>
-          <p className="step">Admin · Growth</p>
-          <h1 style={{ fontSize: 30 }}>User intelligence</h1>
-          <p className="muted">Understand who is using Odogwu, how they engage, and which audiences are growing.</p>
-        </div>
-
-        <div className="stats">
-          <div className="stat"><b>{users.size.toLocaleString("en-GB")}</b><span>Known unique emails</span></div>
-          <div className="stat"><b>{guestCount.toLocaleString("en-GB")}</b><span>Guest checkout users</span></div>
-          <div className="stat"><b>{hostCount.toLocaleString("en-GB")}</b><span>Hosts identified by email</span></div>
-          <div className="stat"><b>{plannerCount.toLocaleString("en-GB")}</b><span>Event planners</span></div>
-        </div>
-
-        <div className="stats">
-          <div className="stat"><b>{successfulPayments.length.toLocaleString("en-GB")}</b><span>Successful payments</span></div>
-          <div className="stat"><b>{naira(totalValueKobo / 100)}</b><span>Successful pack value</span></div>
-          <div className="stat"><b>{events.length.toLocaleString("en-GB")}</b><span>Celebrations created</span></div>
-          <div className="stat"><b>{partners.length.toLocaleString("en-GB")}</b><span>Venue & planner profiles</span></div>
-        </div>
-
-        {(eventResult.error || paymentResult.error || partnerResult.error) && (
-          <div className="panel stack">
-            <strong>Some metrics may be incomplete.</strong>
-            <p className="small muted">
-              One or more database queries failed. Check that the current Supabase schema and migrations are applied.
-              {eventResult.error ? ` Events: ${eventResult.error.message}.` : ""}
-              {paymentResult.error ? ` Payments: ${paymentResult.error.message}.` : ""}
-              {partnerResult.error ? ` Partners: ${partnerResult.error.message}.` : ""}
-            </p>
-          </div>
-        )}
-
-        <section className="panel stack">
-          <h2 style={{ fontSize: 20 }}>Find users</h2>
-          <form method="GET" action="/admin/users" className="stack" style={{ gap: 10 }}>
-            {key && <input type="hidden" name="key" value={key} />}
-            <label className="field">
-              <span>Search by name or email</span>
-              <input className="input" name="q" defaultValue={q} placeholder="e.g. guest@example.com" />
-            </label>
-            <label className="field">
-              <span>User segment</span>
-              <select className="input" name="role" defaultValue={selectedRole}>
-                <option value="all">All user types</option>
-                <option value="guest">Guests</option>
-                <option value="host">Hosts</option>
-                <option value="planner">Event planners</option>
-                <option value="venue">Venue partners</option>
-              </select>
-            </label>
-            <button className="btn" type="submit">Apply filters</button>
-          </form>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {["all", "guest", "host", "planner", "venue"].map((item) => (
-              <Link
-                key={item}
-                href={queryString(item)}
-                className={selectedRole === item ? "btn" : "btn btn-ghost"}
-                style={{ minHeight: 40 }}
-              >
-                {item === "all" ? "Everyone" : roleLabel(item)}
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        <section className="stack">
-          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-            <h2 style={{ fontSize: 20 }}>Users ({filtered.length.toLocaleString("en-GB")})</h2>
-            <span className="small muted">Combined by email where available</span>
-          </div>
-          {filtered.length === 0 ? (
-            <div className="panel">
-              <p className="muted">No matching users found. Host accounts created before host email was saved may not be identifiable here.</p>
-            </div>
-          ) : (
-            <div className="table-wrap">
-              <table className="visits">
-                <thead>
-                  <tr>
-                    <th>Name / business</th>
-                    <th>Email</th>
-                    <th>Segment</th>
-                    <th>Celebrations</th>
-                    <th>Successful payments</th>
-                    <th>Successful value</th>
-                    <th>First seen</th>
-                    <th>Last activity</th>
-                    <th>Source</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((user) => (
-                    <tr key={user.key}>
-                      <td>{user.name}</td>
-                      <td>{user.email}</td>
-                      <td>{[...user.roles].map(roleLabel).join(", ")}</td>
-                      <td>{user.eventsCreated}</td>
-                      <td>{user.successfulPayments}</td>
-                      <td>{naira(user.successfulValueKobo / 100)}</td>
-                      <td>{when(user.firstSeen)}</td>
-                      <td>{when(user.lastActivity)}</td>
-                      <td>{user.source}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-
-        <p className="small muted">
-          Data notes: guests are identified by checkout email; hosts are identified by host email where that field is available;
-          planners and venue partners are identified by partner profile. One person may appear in multiple segments.
-          “Successful value” is the value of successful spray-pack payments, not a statement of Odogwu revenue or payout.
-          Marketing source attribution is not yet collected consistently, so unrecorded sources are labelled accordingly.
-        </p>
+        <div className="row" style={{ justifyContent: "space-between", flexWrap: "wrap" }}><div><h1 style={{ fontSize: 30, marginBottom: 4 }}>User directory</h1><p className="muted">Known identities inferred from payments, event records and partner sign-ups.</p></div><Link className="btn btn-ghost" href="/admin">Back to overview</Link></div>
+        {(eventsResult.error || paymentsResult.error || partnersResult.error) && <div className="error">Some records could not be loaded. Check the Supabase schema and permissions.</div>}
+        <div className="stats"><div className="stat"><b>{users.size}</b><span>Unique records (not verified unique people)</span></div><div className="stat"><b>{[...users.values()].filter(u => u.roles.includes("Guest")).length}</b><span>Guest records</span></div><div className="stat"><b>{[...users.values()].filter(u => u.roles.includes("Host")).length}</b><span>Host records</span></div><div className="stat"><b>{[...users.values()].filter(u => u.roles.includes("Event planner") || u.roles.includes("Venue partner")).length}</b><span>Partner records</span></div></div>
+        <form className="row" method="get" style={{ alignItems: "end", flexWrap: "wrap" }}>
+          <label className="field" style={{ flex: "1 1 240px" }}><span>Search name, email or detail</span><input className="input" name="q" defaultValue={q} placeholder="Search users" /></label>
+          <label className="field" style={{ minWidth: 180 }}><span>Role</span><select className="input" name="role" defaultValue={role}><option value="all">All roles</option><option value="Guest">Guest</option><option value="Host">Host</option><option value="Event planner">Event planner</option><option value="Venue partner">Venue partner</option></select></label>
+          <button className="btn" type="submit">Filter</button>
+        </form>
+        <p className="small muted">Showing {filtered.length} record(s). A guest may also be a host or planner. Odogwu does not currently track a guest's full account profile or marketing source, so these are known records rather than a complete list of every visitor.</p>
+        <div className="table-wrap"><table className="visits"><thead><tr><th>Name</th><th>Email / identifier</th><th>Role(s)</th><th>Details</th><th>First record</th></tr></thead><tbody>
+          {filtered.map((u) => <tr key={u.id}><td>{u.name}</td><td>{u.email || u.id.replace(/^(phone:|partner:)/, "")}</td><td>{u.roles.join(", ")}</td><td>{u.detail || "—"}</td><td>{u.createdAt ? new Date(u.createdAt).toLocaleDateString("en-GB") : "—"}</td></tr>)}
+          {filtered.length === 0 && <tr><td colSpan={5}>No matching records.</td></tr>}
+        </tbody></table></div>
       </main>
     </>
   );
