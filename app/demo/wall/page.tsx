@@ -1,5 +1,6 @@
 import { SprayWall } from "@/components/SprayWall";
 import { TrackVisit } from "@/components/TrackVisit";
+import { DemoCta } from "@/components/DemoCta";
 import { siteUrl } from "@/lib/events";
 import { themeOf } from "@/lib/themes";
 
@@ -17,6 +18,7 @@ export default async function DemoWall({ searchParams }: { searchParams: Promise
   return (
     <>
       {!rate && <TrackVisit page="wall" refTag={tag || undefined} />}
+      {!rate && <DemoCta refTag={tag || undefined} />}
       <SprayWall
         demo
         stress={rate}
