@@ -158,8 +158,8 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled true
-            shrinkResources true
+            minifyEnabled false
+            shrinkResources false
             // Full R8 optimisation (Play Console recommendation)
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
             if (ks) signingConfig signingConfigs.release
