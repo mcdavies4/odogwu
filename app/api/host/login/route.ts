@@ -34,6 +34,14 @@ async function partnersFor(email: string) {
 
 const signedIn = async (email: string) => NextResponse.json({ celebrations: await celebrationsFor(email), partners: await partnersFor(email) });
 
+/**
+ * App-store reviewers can't receive our emails, so one review account signs in with a fixed code.
+ * Set both in Vercel (REVIEW_EMAIL, REVIEW_CODE = 6 digits) only while a review needs it; remove them to switch it off.
+ */
+const reviewEmail = () => (process.env.REVIEW_EMAIL ?? "").trim().toLowerCase();
+const reviewCode = () => (process.env.REVIEW_CODE ?? "").replace(/\D/g, "");
+const isReview = (email: string) => !!reviewEmail() && reviewCode().length === 6 && email === reviewEmail();
+
 const usable = (r: CodeRow | null) => !!r && !r.used && new Date(r.expires_at).getTime() > Date.now() && r.attempts < 5;
 
 /**
@@ -67,6 +75,10 @@ export async function POST(req: Request) {
     if (!(await allow(`login:v:${email}`, 900, 10)) || !(await allow(`login:vip:${who}`, 900, 30))) {
       return tooMany("Too many wrong codes. Wait 15 minutes and ask for a new one.");
     }
+    if (isReview(email)) {
+      if (code.length === 6 && safeEqual(code, reviewCode())) return signedIn(email);
+      return NextResponse.json({ error: BAD }, { status: 400 });
+    }
     const { data: row } = await db
       .from("login_codes")
       .select("*")
@@ -82,7 +94,8 @@ export async function POST(req: Request) {
     return signedIn(email);
   }
 
-  // ---- Send the email
+  // ---- Send the email (the review account uses its fixed code instead)
+  if (isReview(email)) return NextResponse.json({ sent: true });
   if (!emailReady()) return NextResponse.json({ error: NOT_READY }, { status: 503 });
   if (!(await allow(`login:s:${email}`, 600, 3)) || !(await allow(`login:sip:${who}`, 3600, 10))) {
     return tooMany("We've sent a few emails already. Check your inbox and spam folder, or wait 10 minutes.");
