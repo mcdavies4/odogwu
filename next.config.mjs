@@ -3,10 +3,14 @@
 const dev = process.env.NODE_ENV !== "production";
 
 // Only our own Supabase project may be contacted from the browser.
+let supabaseOrigin = "https://*.supabase.co";
 let supabase = "https://*.supabase.co wss://*.supabase.co";
 try {
-  const host = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || "").host;
-  if (host) supabase = `https://${host} wss://${host}`;
+  const u = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || "");
+  if (u.host) {
+    supabaseOrigin = u.origin;
+    supabase = `${u.origin} ${u.protocol === "http:" ? "ws" : "wss"}://${u.host}`;
+  }
 } catch {}
 
 // Content Security Policy: tells browsers exactly what the app is allowed to load,
@@ -16,7 +20,7 @@ const csp = [
   `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""} https://va.vercel-scripts.com`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
-  "img-src 'self' data: blob:",
+  `img-src 'self' data: blob: ${supabaseOrigin}`, // guest selfies on the spray wall live in Supabase Storage
   `connect-src 'self' ${supabase} https://va.vercel-scripts.com`,
   "media-src 'self'",
   "worker-src 'self'",

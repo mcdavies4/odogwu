@@ -11,7 +11,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
   const ev = await getPublicEvent(slug);
   if (!ev) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(
-    { open: ev.is_open, nowDancing: ev.now_dancing, theme: ev.theme },
+    { open: ev.is_open, nowDancing: ev.now_dancing, theme: ev.theme, bigSpray: ev.big_spray_naira, photos: ev.show_photos },
     { headers: { "Cache-Control": "public, s-maxage=3, stale-while-revalidate=10" } }
   );
 }

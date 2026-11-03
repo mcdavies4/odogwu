@@ -8,6 +8,8 @@ import { ANONYMOUS } from "@/lib/hype";
 import { flagOf, isCountry } from "@/lib/countries";
 import { ABROAD_ENABLED } from "@/lib/flags";
 import { logIncident } from "@/lib/ops";
+import { tableFrom } from "@/lib/recognition";
+import { saveSelfie } from "@/lib/selfies";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -37,7 +39,7 @@ export async function POST(req: Request) {
   const db = supabaseAdmin();
   const { data: ev } = await db
     .from("events")
-    .select("id,slug,title,is_open,subaccount_code")
+    .select("*")
     .eq("slug", slug)
     .maybeSingle();
   if (!ev) return NextResponse.json({ error: "Event not found" }, { status: 404 });
@@ -61,9 +63,19 @@ export async function POST(req: Request) {
     amount_kobo: amountKobo,
     fee_kobo: fee,
   };
-  let { error } = await db.from("payments").insert(
-    anonymous ? { ...row, anonymous: true, private_name: typedName || null } : row
-  );
+  // Recognition in the hall: the table they're at, and a selfie for the wall (never for anonymous guests).
+  const tableNo = tableFrom(body.tableNo);
+  const photoUrl = !anonymous && ev.show_photos !== false && body.photo ? await saveSelfie(ev.id, reference, body.photo) : null;
+  const extra: Record<string, unknown> = {};
+  if (tableNo) extra.table_no = tableNo;
+  if (photoUrl) extra.photo_url = photoUrl;
+
+  const base = anonymous ? { ...row, anonymous: true, private_name: typedName || null } : row;
+  let { error } = await db.from("payments").insert({ ...base, ...extra });
+  if (error && Object.keys(extra).length) {
+    // recognition.sql not run yet: pay without the table and photo.
+    ({ error } = await db.from("payments").insert(base));
+  }
   if (error && anonymous) {
     // anonymous.sql not installed yet: still save them as "Anonymous" (privacy first).
     ({ error } = await db.from("payments").insert(row));
@@ -79,7 +91,7 @@ export async function POST(req: Request) {
       platformChargeKobo: fee,
       // Paystack appends ?trxref=…&reference=… itself, so no query string here.
       callbackUrl: `${site}/e/${ev.slug}/spray`,
-      metadata: { event: ev.slug, guest_name: guestName, anonymous, from, pack_naira: packNaira },
+      metadata: { event: ev.slug, guest_name: guestName, anonymous, from, pack_naira: packNaira, table: tableNo },
     });
     return NextResponse.json({ url: tx.authorization_url, reference });
   } catch (e) {

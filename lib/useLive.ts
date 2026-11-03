@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import type { ThemeId } from "./themes";
 
-export type Live = { open: boolean; nowDancing: string | null; theme: ThemeId };
+export type Live = { open: boolean; nowDancing: string | null; theme: ThemeId; bigSpray?: number; photos?: boolean };
 
 /** Polls /live/[slug] for who's dancing, the wall theme and whether spraying is open. */
 export function useLive(slug: string | null, initial: Live, everyMs = 5000): Live {
@@ -16,7 +16,7 @@ export function useLive(slug: string | null, initial: Live, everyMs = 5000): Liv
         if (r.ok && !stop) {
           const d = await r.json();
           setLive((prev) =>
-            prev.open === d.open && prev.nowDancing === d.nowDancing && prev.theme === d.theme ? prev : d
+            prev.open === d.open && prev.nowDancing === d.nowDancing && prev.theme === d.theme && prev.bigSpray === d.bigSpray && prev.photos === d.photos ? prev : d
           );
         }
       } catch {

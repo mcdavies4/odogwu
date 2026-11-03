@@ -27,6 +27,7 @@ export default async function Mc({
       payee={ev.account_name}
       backHref={`/h/${ev.slug}?key=${encodeURIComponent(key)}`}
       dancingOn={ev.theme !== undefined}
+      liveHref={`/h/${ev.slug}/mc/live?key=${encodeURIComponent(key)}`}
     />
   );
 }

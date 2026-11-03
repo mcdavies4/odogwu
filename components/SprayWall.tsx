@@ -8,11 +8,14 @@ import { chime, disableSound, enableSound, horn, swish } from "@/lib/wallSound";
 import { FlutterNote } from "./FlutterNote";
 import { NoteImg } from "./Note";
 import { useLive } from "@/lib/useLive";
+import { DEFAULT_BIG_SPRAY, SPRAY_COLUMNS, SPRAY_COLUMNS_BASIC, initials } from "@/lib/recognition";
 import type { ThemeId } from "@/lib/themes";
 
-export type Spray = { id: number; guest_name: string; amount_naira: number; created_at: string };
+export type Spray = { id: number; guest_name: string; amount_naira: number; created_at: string; table_no?: number | null; photo_url?: string | null };
 type Falling = { key: number; amount: number; left: number; delay: number };
-type Callout = { key: number; name: string; amount: number; tier: number; line: string };
+type Who = { photo: string | null; table: number | null };
+type Callout = { key: number; name: string; amount: number; tier: number; line: string } & Who;
+type Takeover = { key: number; name: string; amount: number } & Who;
 type Milestone = { key: number; amount: number };
 
 const MAX_FALLING = 40;
@@ -21,6 +24,7 @@ const BURST_WINDOW_MS = 7000;
 const CALLOUT_MS = 3600;
 const FLUSH_MS = 250;
 const NEW_PER_FLUSH = 8;
+const TAKEOVER_MS = 5600;
 
 // Deterministic pseudo-random from a spray id, so server and browser draw the same pile.
 function hash(n: number) {
@@ -83,12 +87,25 @@ const Rain = memo(function Rain({ items }: { items: { key: number; amount: numbe
   );
 });
 
-export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee, demo = false, stress = 0, slug, theme, nowDancing, venueName, open = true }: {
+/** A guest's selfie, or their initials in a gold ring when there's no photo. */
+const Avatar = memo(function Avatar({ name, photo, className }: { name: string; photo: string | null; className: string }) {
+  const [broken, setBroken] = useState(false);
+  if (photo && !broken) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img className={`${className} avatar`} src={photo} alt="" onError={() => setBroken(true)} />;
+  }
+  return <span className={`${className} avatar avatar-initials`} aria-hidden="true">{name.includes("Secret") ? "🤫" : initials(name)}</span>;
+});
+
+export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee, demo = false, stress = 0, slug, theme, nowDancing, venueName, open = true, bigSpray = DEFAULT_BIG_SPRAY, showPhotos = true }: {
   eventId: string; title: string; celebrant: string; guestUrl: string; initial: Spray[]; payee?: string; demo?: boolean; stress?: number;
   slug?: string; theme?: ThemeId; nowDancing?: string | null; venueName?: string | null; open?: boolean;
+  bigSpray?: number; showPhotos?: boolean;
 }) {
   // Who's dancing, the theme and open/closed update live from the host's dashboard.
-  const live = useLive(demo ? null : slug ?? null, { open, nowDancing: nowDancing ?? null, theme: theme ?? "classic" }, 4000);
+  const live = useLive(demo ? null : slug ?? null, { open, nowDancing: nowDancing ?? null, theme: theme ?? "classic", bigSpray, photos: showPhotos }, 4000);
+  const bigLevel = demo ? 15_000 : live.bigSpray ?? bigSpray;
+  const photosOn = live.photos ?? showPhotos;
   const [demoDancing, setDemoDancing] = useState<string | null>(demo ? nowDancing ?? null : null);
   const dancing = demo ? demoDancing : live.nowDancing;
   const [sprays, setSprays] = useState<Spray[]>(initial);
@@ -98,10 +115,19 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee,
   const [leaderFlash, setLeaderFlash] = useState<string | null>(null);
   const [soundOn, setSoundOn] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
+  const [takeover, setTakeover] = useState<Takeover | null>(null);
+  const [removed, setRemoved] = useState<Set<string>>(() => new Set());
 
   const seen = useRef(new Set(initial.map((s) => s.id)));
   const lastId = useRef(initial.length ? initial[initial.length - 1].id : 0);
-  const bursts = useRef(new Map<string, { name: string; amount: number; last: number }>());
+  const bursts = useRef(new Map<string, { name: string; amount: number; last: number; alerted: boolean }>());
+  // Each guest's latest photo and table, for callouts, the leaderboard and takeovers.
+  const who = useRef(new Map<string, Who>());
+  const bigRef = useRef(bigLevel);
+  bigRef.current = bigLevel;
+  const takeQueue = useRef<Takeover[]>([]);
+  const takeCurrent = useRef<Takeover | null>(null);
+  const takeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const queue = useRef<Callout[]>([]);
   const current = useRef<Callout | null>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -122,13 +148,13 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee,
     }
   }, []);
 
-  const hype = useCallback((name: string, amount: number) => {
+  const hype = useCallback((name: string, amount: number, w: Who) => {
     const tier = tierFor(amount);
     if (tier < 0) return;
     const cur = current.current;
     if (cur && cur.name === name) {
       const upgraded = tier > cur.tier;
-      const updated = { ...cur, amount, tier, line: upgraded ? lineFor(tier, counter.current++, kindOf(name)) : cur.line };
+      const updated = { ...cur, ...w, amount, tier, line: upgraded ? lineFor(tier, counter.current++, kindOf(name)) : cur.line };
       current.current = updated;
       setCallout(updated);
       if (upgraded && soundRef.current) chime(tier);
@@ -136,7 +162,7 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee,
       hideTimer.current = setTimeout(showNext, CALLOUT_MS);
       return;
     }
-    const entry: Callout = { key: counter.current++, name, amount, tier, line: lineFor(tier, counter.current, kindOf(name)) };
+    const entry: Callout = { key: counter.current++, name, amount, tier, line: lineFor(tier, counter.current, kindOf(name)), ...w };
     const i = queue.current.findIndex((q) => q.name === name);
     if (i >= 0) queue.current[i] = { ...entry, key: queue.current[i].key };
     else queue.current.push(entry);
@@ -147,6 +173,32 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee,
     }
     if (!cur) showNext();
   }, [showNext]);
+
+  // ---------- ODOGWU ALERT: a big spray takes over the whole wall for a few seconds ----------
+  const nextTakeover = useCallback(() => {
+    const next = takeQueue.current.shift() ?? null;
+    takeCurrent.current = next;
+    setTakeover(next);
+    if (takeTimer.current) clearTimeout(takeTimer.current);
+    if (next) {
+      if (soundRef.current) { horn(); setTimeout(() => chime(3), 500); }
+      takeTimer.current = setTimeout(nextTakeover, TAKEOVER_MS);
+    }
+  }, []);
+  const bigAlert = useCallback((t: Takeover) => {
+    const cur = takeCurrent.current;
+    if (cur && cur.name === t.name) { // same guest still going: keep counting up on screen
+      const updated = { ...cur, amount: t.amount };
+      takeCurrent.current = updated;
+      setTakeover(updated);
+      return;
+    }
+    if (takeQueue.current.some((q) => q.name === t.name)) return;
+    takeQueue.current.push(t);
+    if (takeQueue.current.length > 3) takeQueue.current.length = 3;
+    if (!cur) nextTakeover();
+  }, [nextTakeover]);
+  useEffect(() => () => { if (takeTimer.current) clearTimeout(takeTimer.current); }, []);
 
   // ---------- New sprays arrive (realtime, catch-up poll, or demo) ----------
   // They're buffered and drawn together 4 times a second: looks identical, far lighter.
@@ -173,8 +225,19 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee,
       lastId.current = Math.max(lastId.current, s.id);
       const k = s.guest_name.trim().toLowerCase();
       const b = bursts.current.get(k);
-      const streak = b && now - b.last < BURST_WINDOW_MS ? b.amount + s.amount_naira : s.amount_naira;
-      bursts.current.set(k, { name: displayName(s.guest_name), amount: streak, last: now });
+      const going = !!b && now - b.last < BURST_WINDOW_MS;
+      const streak = going ? b!.amount + s.amount_naira : s.amount_naira;
+      const prev = who.current.get(k);
+      const w: Who = { photo: s.photo_url ?? prev?.photo ?? null, table: s.table_no ?? prev?.table ?? null };
+      who.current.set(k, w);
+      const name = displayName(s.guest_name);
+      let alerted = going ? b!.alerted : false;
+      if (bigRef.current > 0 && streak >= bigRef.current) {
+        // Once per streak; while their takeover is on screen, the amount keeps counting up.
+        if (!alerted || takeCurrent.current?.name === name) bigAlert({ key: s.id, name, amount: streak, ...w });
+        alerted = true;
+      }
+      bursts.current.set(k, { name, amount: streak, last: now, alerted });
     }
     setSprays((prev) => [...prev, ...fresh]);
     setFalling((prev) => {
@@ -185,8 +248,9 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee,
 
     // The latest guest's streak drives the callout.
     const last = fresh[fresh.length - 1];
-    const b = bursts.current.get(last.guest_name.trim().toLowerCase());
-    if (b) hype(b.name, b.amount);
+    const lk = last.guest_name.trim().toLowerCase();
+    const b = bursts.current.get(lk);
+    if (b) hype(b.name, b.amount, who.current.get(lk) ?? { photo: null, table: null });
 
     // Milestones
     const added = fresh.reduce((s, r) => s + r.amount_naira, 0);
@@ -204,7 +268,7 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee,
       });
       setTimeout(() => setMilestone((m) => (m && m.key === now ? null : m)), 4200);
     }
-  }, [hype]);
+  }, [hype, bigAlert]);
   processRef.current = processBatch;
 
   // ---------- Live data ----------
@@ -215,17 +279,20 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee,
       .channel(`wall:${eventId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "sprays", filter: `event_id=eq.${eventId}` },
         (payload) => addSprays([payload.new as Spray]))
+      // The MC removed a guest's photo: take it off the wall straight away.
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "sprays", filter: `event_id=eq.${eventId}` },
+        (payload) => {
+          const before = (payload.old as Partial<Spray>)?.photo_url;
+          if (before && !(payload.new as Spray).photo_url) setRemoved((r) => (r.has(before) ? r : new Set(r).add(before)));
+        })
       .subscribe();
+    let columns = SPRAY_COLUMNS;
     // Safety net for flaky venue Wi-Fi: catch up on anything realtime missed.
     const poll = setInterval(async () => {
-      const { data } = await sb
-        .from("sprays")
-        .select("id,guest_name,amount_naira,created_at")
-        .eq("event_id", eventId)
-        .gt("id", lastId.current)
-        .order("id", { ascending: true })
-        .limit(500);
-      if (data?.length) addSprays(data as Spray[]);
+      const query = () => sb.from("sprays").select(columns).eq("event_id", eventId).gt("id", lastId.current).order("id", { ascending: true }).limit(500);
+      let { data, error } = await query();
+      if (error && columns === SPRAY_COLUMNS) { columns = SPRAY_COLUMNS_BASIC; ({ data } = await query()); } // recognition.sql not run yet
+      if (data?.length) addSprays(data as unknown as Spray[]);
     }, 8000);
     return () => { sb.removeChannel(channel); clearInterval(poll); };
   }, [eventId, demo, addSprays]);
@@ -260,7 +327,7 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee,
       const denom = big ? 1000 : [50, 100, 200, 500, 500, 1000][Math.floor(Math.random() * 6)];
       for (let i = 0; i < notes; i++) {
         timers.push(setTimeout(() => {
-          addSprays([{ id: id++, guest_name: name, amount_naira: denom, created_at: new Date().toISOString() }]);
+          addSprays([{ id: id++, guest_name: name, amount_naira: denom, created_at: new Date().toISOString(), table_no: name === "Anonymous" ? null : 1 + Math.floor(hash(name.length * 97 + name.charCodeAt(0)) * 12) }]);
         }, i * (140 + Math.random() * 120)));
       }
       timers.push(setTimeout(burst, notes * 200 + 900 + Math.random() * 1800));
@@ -272,15 +339,26 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee,
   // ---------- Derived ----------
   const total = useMemo(() => sprays.reduce((s, r) => s + r.amount_naira, 0), [sprays]);
   const board = useMemo(() => {
-    const m = new Map<string, { name: string; amt: number }>();
+    const m = new Map<string, { name: string; amt: number; photo: string | null; table: number | null }>();
     for (const s of sprays) {
       const k = s.guest_name.trim().toLowerCase();
-      const cur = m.get(k) ?? { name: displayName(s.guest_name), amt: 0 };
+      const cur = m.get(k) ?? { name: displayName(s.guest_name), amt: 0, photo: null, table: null };
       cur.amt += s.amount_naira;
+      cur.photo = s.photo_url ?? cur.photo;
+      cur.table = s.table_no ?? cur.table;
       m.set(k, cur);
     }
-    return [...m.values()].sort((a, b) => b.amt - a.amt).slice(0, 7);
+    return [...m.values()].sort((a, b) => b.amt - a.amt);
   }, [sprays]);
+
+  // Table vs table: shows once at least two tables have sprayed.
+  const tables = useMemo(() => {
+    const m = new Map<number, number>();
+    for (const s of sprays) if (s.table_no) m.set(s.table_no, (m.get(s.table_no) ?? 0) + s.amount_naira);
+    return m.size >= 2 ? [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3) : [];
+  }, [sprays]);
+  const leaders = board.slice(0, tables.length ? 5 : 7); // room for Top tables underneath
+  const pic = (url: string | null) => (photosOn && url && !removed.has(url) ? url : null);
 
   // New leader alert
   useEffect(() => {
@@ -375,9 +453,11 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee,
         )}
 
         <div className="callout-zone" aria-live="polite">
-          {callout && (
+          {callout && !takeover && (
             <div className={`callout tier-${callout.tier}`} key={callout.key}>
+              <Avatar name={callout.name} photo={pic(callout.photo)} className="callout-avatar" />
               <div className="callout-name">{callout.name}</div>
+              {callout.table && <div className="callout-table">Table {callout.table}</div>}
               <div className="callout-line">{callout.line}</div>
               <div className="callout-amount" key={callout.amount}>{naira(callout.amount)}</div>
             </div>
@@ -405,21 +485,43 @@ export function SprayWall({ eventId, title, celebrant, guestUrl, initial, payee,
         <div>
           <h2 style={{ fontSize: 22, marginBottom: 8 }}>Top sprayers</h2>
           {leaderFlash && <div className="leader-flash" key={leaderFlash}>New top sprayer: {leaderFlash}!</div>}
-          {board.length === 0 ? (
+          {leaders.length === 0 ? (
             <p className="muted">Who&apos;s going first?</p>
           ) : (
             <ol className="board">
-              {board.map((b, i) => (
+              {leaders.map((b, i) => (
                 <li key={b.name} className={i === 0 ? "lead" : undefined}>
                   <span className="pos">{i === 0 ? "👑" : i + 1}</span>
-                  <span className="who">{b.name}</span>
+                  <span className="who"><Avatar name={b.name} photo={pic(b.photo)} className="board-avatar" />{b.name}{b.table ? <small className="board-table"> · T{b.table}</small> : null}</span>
                   <span className="amt">{compactNaira(b.amt)}</span>
                 </li>
               ))}
             </ol>
           )}
+          {tables.length > 0 && (
+            <div className="table-board">
+              <h3>Top tables</h3>
+              <ol>
+                {tables.map(([t, amt], i) => (
+                  <li key={t} className={i === 0 ? "lead" : undefined}><span>{i === 0 ? "🏆" : i + 1}</span><span>Table {t}</span><b>{compactNaira(amt)}</b></li>
+                ))}
+              </ol>
+            </div>
+          )}
         </div>
       </aside>
+
+      {takeover && (
+        <div className="takeover" key={takeover.key} role="status">
+          <div className="takeover-burst" aria-hidden="true" />
+          <div className="takeover-tag">🚨 ODOGWU ALERT 🚨</div>
+          <Avatar name={takeover.name} photo={pic(takeover.photo)} className="takeover-avatar" />
+          <div className="takeover-name">{takeover.name}</div>
+          {takeover.table && <div className="takeover-table">Table {takeover.table}</div>}
+          <div className="takeover-amount" key={takeover.amount}>{naira(takeover.amount)}</div>
+          <div className="takeover-line">is spraying {celebrant}! 👑</div>
+        </div>
+      )}
 
       {milestone && (
         <div className="milestone" key={milestone.key} role="status">

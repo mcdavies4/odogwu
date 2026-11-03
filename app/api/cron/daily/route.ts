@@ -9,6 +9,7 @@ import { digestEmail, reminderEmail, summaryEmail } from "@/lib/emailTemplates";
 import { siteUrl } from "@/lib/events";
 import { adminEmail } from "@/lib/ops";
 import { SUPPORT_EMAIL } from "@/lib/contact";
+import { removeSelfies } from "@/lib/selfies";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -45,6 +46,12 @@ export async function GET(req: Request) {
   // ---- 0. Keep Supabase's free plan awake, and tidy up
   await db.from("events").select("id", { head: true, count: "exact" }).limit(1);
   try { await db.rpc("housekeeping"); } catch {}
+
+  // ---- 0b. Guest selfies are only for the party: delete them 3 days later
+  try {
+    const { data: old, error } = await db.from("payments").select("id,photo_url").not("photo_url", "is", null).lt("created_at", ago(3 * 86400_000)).limit(500);
+    if (!error && old?.length) out.selfies_deleted = await removeSelfies(old);
+  } catch {}
 
   // ---- 1. Reconcile payments Paystack may have finished after the guest left
   const { data: pending } = await db

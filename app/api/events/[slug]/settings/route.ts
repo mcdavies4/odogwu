@@ -7,6 +7,7 @@ import { payoutChangedEmail } from "@/lib/emailTemplates";
 import { siteUrl } from "@/lib/events";
 import { SUPPORT_EMAIL } from "@/lib/contact";
 import { logIncident } from "@/lib/ops";
+import { bigSprayFrom } from "@/lib/recognition";
 
 type Ev = { id: string; slug: string; title: string; celebrant_name: string; host_key: string; host_email?: string | null; host_phone: string | null; account_name: string; account_last4: string; subaccount_code: string };
 
@@ -14,6 +15,7 @@ type Ev = { id: string; slug: string; title: string; celebrant_name: string; hos
  * Host only. Lets hosts fix their own mistakes without messaging anyone:
  *  { action: "details", title, celebrantName, eventDate }
  *  { action: "payout", bankCode, accountNumber }   → new Paystack subaccount; future packs pay there
+ *  { action: "recognition", bigSpray, showPhotos } → ODOGWU ALERT level and guest photos on the wall
  */
 export async function POST(req: Request, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
@@ -39,6 +41,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     let { error } = await db.from("events").update({ ...changes, reminder_sent_at: null, summary_sent_at: null }).eq("id", ev.id);
     if (error) ({ error } = await db.from("events").update(changes).eq("id", ev.id));
     if (error) return NextResponse.json({ error: "Couldn't save. Try again." }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
+
+  if (body.action === "recognition") {
+    const changes = { big_spray_naira: bigSprayFrom(body.bigSpray), show_photos: body.showPhotos !== false };
+    const { error } = await db.from("events").update(changes).eq("id", ev.id);
+    if (error) return NextResponse.json({ error: "Not switched on yet: run supabase/recognition.sql in Supabase first." }, { status: 503 });
     return NextResponse.json({ ok: true });
   }
 

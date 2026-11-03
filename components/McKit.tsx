@@ -2,16 +2,17 @@
 import { QRCodeSVG } from "qrcode.react";
 import { Logo } from "./Note";
 
-type Props = { url: string; celebrant: string; title: string; payee: string; backHref: string; dancingOn: boolean };
+type Props = { url: string; celebrant: string; title: string; payee: string; backHref: string; dancingOn: boolean; liveHref?: string };
 
 /** Page 1: what the MC says and when. Page 2: an A4 poster for the entrance. */
-export function McKit({ url, celebrant, title, payee, backHref, dancingOn }: Props) {
+export function McKit({ url, celebrant, title, payee, backHref, dancingOn, liveHref }: Props) {
   const short = url.replace(/^https?:\/\//, "");
   return (
     <div className="mc-page">
       <div className="cards-controls no-print">
         <a className="btn btn-ghost" href={backHref}>Back to dashboard</a>
         <button type="button" className="btn" onClick={() => window.print()}>Print MC kit</button>
+        {liveHref && <a className="btn" href={liveHref} target="_blank" rel="noopener">📣 MC live screen</a>}
         <p className="small muted">Two pages: the MC&apos;s script, and a poster for the entrance or the stage.</p>
       </div>
 
@@ -39,28 +40,39 @@ export function McKit({ url, celebrant, title, payee, backHref, dancingOn }: Pro
         </section>
 
         <section>
-          <h2>3. When the screen hits a milestone</h2>
+          <h2>3. Call out the sprayers</h2>
+          <blockquote>&quot;Table [number]! [Name] don land with [amount]! Odogwu! DJ, give am horn! 📯&quot;</blockquote>
+          <p className="mc-tip">
+            Open the <strong>MC live screen</strong> on your phone: it shows every spray as it lands, with the guest&apos;s name, table
+            and photo. Gold cards are big sprays. When one comes in, the wall shows an <strong>ODOGWU ALERT</strong>, so call them out loud.
+          </p>
+          <blockquote>&quot;Which table is leading? Table [number], you dey sleep? Show us your power!&quot;</blockquote>
+        </section>
+
+        <section>
+          <h2>4. When the screen hits a milestone</h2>
           <blockquote>&quot;We just passed [amount] for {celebrant}! Who&apos;s taking us to the next one? Odogwu, where you dey?!&quot;</blockquote>
         </section>
 
         <section>
-          <h2>4. Hype the top sprayer</h2>
+          <h2>5. Hype the top sprayer</h2>
           <blockquote>&quot;Chairman of the day! [Name] is leading! Who wan collect that crown?&quot;</blockquote>
           <p className="mc-tip">Some guests spray as &quot;Secret Odogwu 🤫&quot;. Play with it: &quot;Who is this Secret Odogwu?!&quot;</p>
         </section>
 
         <section>
-          <h2>5. If anyone asks</h2>
+          <h2>6. If anyone asks</h2>
           <ul>
             <li><strong>Where does the money go?</strong> Straight to {payee}&apos;s bank, by the next working day. Odogwu never holds it.</li>
             <li><strong>How do I pay?</strong> Card, bank transfer or USSD.</li>
             <li><strong>No app needed.</strong> It opens in the phone&apos;s browser.</li>
             <li><strong>Can I hide my name?</strong> Yes, switch on &quot;Spray anonymously&quot;.</li>
+            <li><strong>How do I get my face on the screen?</strong> Add a selfie and your table number before you pay.</li>
           </ul>
         </section>
 
         <section>
-          <h2>6. Last call</h2>
+          <h2>7. Last call</h2>
           <blockquote>&quot;Last chance to spray {celebrant} tonight! Scan the code now, the screen is still live.&quot;</blockquote>
         </section>
       </article>

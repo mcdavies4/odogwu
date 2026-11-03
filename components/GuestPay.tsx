@@ -4,8 +4,32 @@ import Link from "next/link";
 import { MIN_PACK_NAIRA, PACKS_NAIRA, naira, compactNaira, serviceFee } from "@/lib/money";
 import { COUNTRIES, flagOf } from "@/lib/countries";
 import { ABROAD_ENABLED } from "@/lib/flags";
+import { tableFrom } from "@/lib/recognition";
 
-export function GuestPay({ slug, celebrant, feePct, feeFlat }: { slug: string; celebrant: string; feePct: number; feeFlat: number }) {
+/** Squares and shrinks a photo on the phone (~30 KB), so it uploads fast on party Wi-Fi. */
+async function shrinkPhoto(file: File): Promise<string> {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((ok, bad) => {
+      const i = new Image();
+      i.onload = () => ok(i);
+      i.onerror = () => bad(new Error("That photo couldn't be opened. Try another."));
+      i.src = url;
+    });
+    const side = Math.min(img.naturalWidth, img.naturalHeight);
+    const size = Math.min(360, side);
+    const c = document.createElement("canvas");
+    c.width = c.height = size;
+    const g = c.getContext("2d");
+    if (!g) throw new Error("Your phone couldn't prepare the photo.");
+    g.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, size, size);
+    return c.toDataURL("image/jpeg", 0.8);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+export function GuestPay({ slug, celebrant, feePct, feeFlat, photos = true }: { slug: string; celebrant: string; feePct: number; feeFlat: number; photos?: boolean }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [pack, setPack] = useState<number>(5000);
@@ -16,6 +40,9 @@ export function GuestPay({ slug, celebrant, feePct, feeFlat }: { slug: string; c
   const [anonymous, setAnonymous] = useState(false);
   const [abroad, setAbroad] = useState(false);
   const [from, setFrom] = useState("");
+  const [table, setTable] = useState("");
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -23,6 +50,10 @@ export function GuestPay({ slug, celebrant, feePct, feeFlat }: { slug: string; c
       setResume(localStorage.getItem(`odogwu:ref:${slug}`));
       const savedFrom = localStorage.getItem("odogwu:from");
       if (savedFrom && ABROAD_ENABLED) { setAbroad(true); setFrom(savedFrom); }
+      // Numbered table cards add ?t=7 to the link; remember it for this celebration.
+      const t = tableFrom(new URLSearchParams(window.location.search).get("t")) ?? tableFrom(localStorage.getItem(`odogwu:table:${slug}`));
+      if (t) setTable(String(t));
+      setPhoto(localStorage.getItem("odogwu:selfie"));
     } catch {}
   }, [slug]);
 
@@ -39,13 +70,17 @@ export function GuestPay({ slug, celebrant, feePct, feeFlat }: { slug: string; c
       const r = await fetch("/api/pay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, guestName: name, guestEmail: email, packNaira: amount, anonymous, from: abroad ? from : undefined }),
+        body: JSON.stringify({
+          slug, guestName: name, guestEmail: email, packNaira: amount, anonymous, from: abroad ? from : undefined,
+          tableNo: tableFrom(table) ?? undefined, photo: photos && !anonymous && photo ? photo : undefined,
+        }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
       try {
         if (!anonymous) localStorage.setItem("odogwu:name", name.trim());
         if (abroad && from) localStorage.setItem("odogwu:from", from); else localStorage.removeItem("odogwu:from");
+        if (tableFrom(table)) localStorage.setItem(`odogwu:table:${slug}`, String(tableFrom(table)));
         localStorage.setItem(`odogwu:ref:${slug}`, d.reference);
       } catch {}
       window.location.href = d.url;
@@ -53,6 +88,24 @@ export function GuestPay({ slug, celebrant, feePct, feeFlat }: { slug: string; c
       setError((err as Error).message || "Couldn't start the payment. Try again.");
       setBusy(false);
     }
+  }
+
+  async function pickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setPhotoError(null);
+    try {
+      const small = await shrinkPhoto(file);
+      setPhoto(small);
+      try { localStorage.setItem("odogwu:selfie", small); } catch {}
+    } catch (err) {
+      setPhotoError((err as Error).message);
+    }
+  }
+  function dropPhoto() {
+    setPhoto(null);
+    try { localStorage.removeItem("odogwu:selfie"); } catch {}
   }
 
   return (
@@ -77,6 +130,35 @@ export function GuestPay({ slug, celebrant, feePct, feeFlat }: { slug: string; c
           placeholder={anonymous ? "Only the celebrant will see it" : "Shows on the spray wall"}
           value={name} onChange={(e) => setName(e.target.value)} />
         {anonymous && <small>Only {celebrant} sees it, in their private thank-you list. Leave it blank to stay completely anonymous.</small>}
+      </label>
+
+      {photos && !anonymous && (
+        <div className="selfie-pick">
+          {photo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img className="selfie-preview" src={photo} alt="Your photo for the spray wall" />
+          ) : (
+            <span className="selfie-preview selfie-empty" aria-hidden="true">📸</span>
+          )}
+          <div className="selfie-text">
+            <strong>{photo ? "Your face goes on the big screen" : "Add your photo for the big screen"}</strong>
+            <small>Optional. It shows on the spray wall when you spray, and is deleted 3 days after the party.</small>
+            <div className="selfie-actions">
+              <label className="btn btn-ghost btn-small">
+                {photo ? "Change photo" : "Take a selfie"}
+                <input type="file" accept="image/*" capture="user" onChange={pickPhoto} hidden />
+              </label>
+              {photo && <button type="button" className="btn btn-ghost btn-small" onClick={dropPhoto}>Remove</button>}
+            </div>
+            {photoError && <small className="error">{photoError}</small>}
+          </div>
+        </div>
+      )}
+
+      <label className="field"><span>Your table number (optional)</span>
+        <input className="input" inputMode="numeric" maxLength={3} placeholder="It's on the card on your table" value={table}
+          onChange={(e) => setTable(e.target.value.replace(/\D/g, "").slice(0, 3))} />
+        <small>So the MC can call out your table.</small>
       </label>
 
       {ABROAD_ENABLED && <label className="anon-toggle">

@@ -19,6 +19,7 @@ import { CopyLink } from "@/components/CopyLink";
 import { ABROAD_ENABLED } from "@/lib/flags";
 import { Rehearsal } from "@/components/Rehearsal";
 import { HostSettings, Payouts } from "@/components/HostSettings";
+import { RecognitionSettings } from "@/components/RecognitionSettings";
 
 export const dynamic = "force-dynamic";
 export const metadata = { robots: { index: false } };
@@ -96,6 +97,7 @@ export default async function HostDashboard({
           <Link className="tool" href={`/h/${ev.slug}/report?key=${k}`}><span>📋</span><strong>Spray report</strong><small>Who sprayed and how much</small></Link>
           <Link className="tool" href={`/h/${ev.slug}/recap?key=${k}`}><span>🎬</span><strong>Highlight reel</strong><small>A 20-second video to post</small></Link>
           <Link className="tool" href={`/h/${ev.slug}/mc?key=${k}`}><span>🎤</span><strong>MC kit</strong><small>Script and entrance poster</small></Link>
+          <Link className="tool" href={`/h/${ev.slug}/mc/live?key=${k}`} target="_blank"><span>📣</span><strong>MC live screen</strong><small>Every spray, with table numbers, to shout out</small></Link>
           <Link className="tool" href={`/e/${ev.slug}/wall`} target="_blank"><span>📺</span><strong>Spray wall</strong><small>For the projector or TV</small></Link>
         </div>
 
@@ -103,6 +105,7 @@ export default async function HostDashboard({
           <>
             <NowDancing slug={ev.slug} hostKey={key} initial={ev.now_dancing ?? null} />
             <ThemePicker slug={ev.slug} hostKey={key} initial={themeOf(ev.theme)} unlocked={Boolean(ev.themes_unlocked)} price={themePrice()} />
+            <RecognitionSettings slug={ev.slug} hostKey={key} bigSpray={pub?.big_spray_naira ?? 50000} showPhotos={pub?.show_photos ?? true} mcHref={`/h/${ev.slug}/mc/live?key=${k}`} />
           </>
         ) : (
           <div className="panel small muted">

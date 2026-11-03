@@ -3,6 +3,7 @@ import { getPublicEvent, siteUrl } from "@/lib/events";
 import { supabaseAdmin } from "@/lib/supabase-server";
 import { fetchAll } from "@/lib/report";
 import { SprayWall, type Spray } from "@/components/SprayWall";
+import { SPRAY_COLUMNS, SPRAY_COLUMNS_BASIC } from "@/lib/recognition";
 
 export const dynamic = "force-dynamic";
 
@@ -13,9 +14,10 @@ export default async function WallPage({ params }: { params: Promise<{ slug: str
 
   // Every spray so far, so a reloaded wall shows the true total even after 1,000+ notes.
   const db = supabaseAdmin();
-  const data = await fetchAll<Spray>((f, t) =>
-    db.from("sprays").select("id,guest_name,amount_naira,created_at").eq("event_id", ev.id).order("id", { ascending: true }).range(f, t)
-  ).catch(() => [] as Spray[]);
+  const load = (cols: string) =>
+    fetchAll<Spray>((f, t) => db.from("sprays").select(cols).eq("event_id", ev.id).order("id", { ascending: true }).range(f, t) as never);
+  // Falls back to the basic columns until supabase/recognition.sql has been run.
+  const data = await load(SPRAY_COLUMNS).catch(() => load(SPRAY_COLUMNS_BASIC)).catch(() => [] as Spray[]);
 
   return (
     <SprayWall
@@ -29,6 +31,8 @@ export default async function WallPage({ params }: { params: Promise<{ slug: str
       nowDancing={ev.now_dancing}
       venueName={ev.venue_name}
       open={ev.is_open}
+      bigSpray={ev.big_spray_naira}
+      showPhotos={ev.show_photos}
       initial={(data ?? []) as Spray[]}
     />
   );

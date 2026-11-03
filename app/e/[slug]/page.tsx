@@ -34,7 +34,7 @@ export default async function GuestPage({ params }: { params: Promise<{ slug: st
         Money goes to <strong>{ev.account_name}</strong> ({ev.bank_name}), checked with the bank.
       </div>
       {ev.is_open ? (
-        <GuestPay slug={ev.slug} celebrant={ev.celebrant_name} feePct={feePercent()} feeFlat={feeFlat()} />
+        <GuestPay slug={ev.slug} celebrant={ev.celebrant_name} feePct={feePercent()} feeFlat={feeFlat()} photos={ev.show_photos} />
       ) : (
         <div className="panel"><p>Spraying has closed for this celebration. Thank you for coming!</p></div>
       )}

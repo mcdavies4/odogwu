@@ -1,6 +1,7 @@
 import "server-only";
 import { supabaseAdmin } from "./supabase-server";
 import { themeOf, type ThemeId } from "./themes";
+import { bigSprayFrom } from "./recognition";
 
 export type PublicEvent = {
   id: string;
@@ -14,6 +15,8 @@ export type PublicEvent = {
   theme: ThemeId;
   now_dancing: string | null;
   venue_name: string | null;
+  big_spray_naira: number; // "ODOGWU ALERT" takeover level, 0 = off
+  show_photos: boolean; // guest selfies on the wall
 };
 
 // "*" so the site keeps working whether or not supabase/features.sql has been run.
@@ -39,6 +42,8 @@ export async function getPublicEvent(slug: string): Promise<PublicEvent | null> 
     theme: themeOf(data.theme),
     now_dancing: data.now_dancing ?? null,
     venue_name,
+    big_spray_naira: data.big_spray_naira === undefined ? bigSprayFrom(undefined) : bigSprayFrom(data.big_spray_naira),
+    show_photos: data.show_photos !== false,
   };
 }
 

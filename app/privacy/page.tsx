@@ -26,6 +26,7 @@ export default function Privacy() {
       <h3>From guests</h3>
       <ul>
         <li>The name you choose to show on the wall (or none, if you spray anonymously).</li>
+        <li>If you choose to add one: a selfie and your table number, shown on the spray wall and the MC&apos;s screen. Selfies are deleted 3 days after you spray, and the host can remove one at any time.</li>
         <li>An optional email for your receipt, and the country you&apos;re spraying from if you choose one.</li>
         <li>What you paid and sprayed, with the payment reference.</li>
         <li><strong>We never see or store your card or bank login details.</strong> Paystack handles those.</li>
@@ -46,7 +47,7 @@ export default function Privacy() {
 
       <h2>Who sees it</h2>
       <ul>
-        <li><strong>Everyone at the event</strong> sees names and amounts on the spray wall, unless you spray anonymously.</li>
+        <li><strong>Everyone at the event</strong> sees names, amounts, table numbers and any selfie you added on the spray wall, unless you spray anonymously.</li>
         <li><strong>The host</strong> sees the full list of who sprayed, emails guests chose to give, and private names of anonymous guests who gave one.</li>
         <li><strong>Venue partners</strong> see only the name, date and total of celebrations created through their link.</li>
         <li><strong>Our service providers</strong>, only to run Odogwu: Paystack (payments), Supabase (database) and Vercel (hosting). Some of their servers are outside Nigeria; we use providers with strong security and contractual protections for these transfers.</li>
