@@ -279,3 +279,103 @@ export function digestEmail(o: { date: string; lines: string[]; attention: strin
     text: `${quiet ? "All good. Nothing needs you today." : o.attention.join("\n")}\n\n${o.lines.join("\n")}\n\n${o.adminLink}`,
   };
 }
+
+/* ------------------------------------------------------------------ */
+/* Follow-ups for people who signed up and haven't got going yet       */
+/* ------------------------------------------------------------------ */
+
+const STOP = "Don't want these tips? Reply \"stop\" and we won't send any more.";
+
+/** To a host, 2–3 days after creating a celebration, if nothing has happened yet. */
+export function hostGetReadyEmail(o: { title: string; celebrant: string; date: string | null; payee: string; bank: string; link: string; cards: string; demo: string }): Email {
+  const noDate = !o.date;
+  const intro = [
+    `You set up ${o.title} on Odogwu a few days ago. Here's how to get the most out of it, in about 10 minutes.`,
+    ...(noDate ? ["You haven't added the date yet. Add it on your dashboard and we'll send you a checklist the day before."] : []),
+  ];
+  const steps = [
+    { title: "Check the payout name", text: `Spray money goes to ${o.payee} (${o.bank}). Wrong? Change it from your dashboard.` },
+    ...(noDate ? [{ title: "Add the party date", text: "Under \"Celebration details\" on your dashboard." }] : []),
+    { title: "See what your guests will see", text: `Spray a few pretend notes on the demo wall: ${o.demo}` },
+    { title: "Print numbered table cards", text: `One per table. Each card tells the wall which table is spraying: ${o.cards}` },
+    { title: "Tell your guests: no cash needed", text: "Mention it in your WhatsApp group so nobody queues at the ATM." },
+  ];
+  return {
+    subject: `Getting ${o.title} ready`,
+    html: layout({
+      preheader: "Ten minutes now saves you stress on the day.",
+      heading: `Let's get ${o.title} ready 🎉`,
+      intro,
+      button: { label: "Open my dashboard", url: o.link },
+      steps,
+      after: ["Questions? Just reply to this email. A real person reads every one.", STOP],
+    }),
+    text: `${intro.join("\n\n")}\n\n${steps.map((s, i) => `${i + 1}. ${s.title}: ${s.text}`).join("\n")}\n\nDashboard: ${o.link}\n\nQuestions? Reply to this email.\n${STOP}`,
+  };
+}
+
+/** To a host, one week before the party. */
+export function hostWeekEmail(o: { title: string; celebrant: string; date: string | null; link: string; cards: string; mcLive: string; guestLink: string }): Email {
+  const whatsapp = `Hi everyone! 🎉 At ${o.title} on ${longDate(o.date)}, you can spray ${o.celebrant} straight from your phone. No cash needed: just scan the QR code on your table. Add a selfie and your face shows on the big screen! Try it here: ${o.guestLink}`;
+  return {
+    subject: `One week to ${o.title} 🎉`,
+    html: layout({
+      preheader: "Four things to sort this week, and a message for your guests.",
+      heading: "One week to go!",
+      intro: [`${o.title} is on ${longDate(o.date)}. Sort these this week and the day itself runs smoothly.`],
+      button: { label: "Open my dashboard", url: o.link },
+      steps: [
+        { title: "Print the table cards now", text: `Print shops get busy the week of a party: ${o.cards}` },
+        { title: "Send your guests this message", text: whatsapp },
+        { title: "Brief your MC", text: `Send them the MC live screen. It shows every spray as it lands, with names and tables, so they can shout people out: ${o.mcLive}` },
+        { title: "Set your ODOGWU ALERT", text: "On your dashboard, choose how big a spray takes over the whole screen." },
+      ],
+      after: ["We'll send your rehearsal checklist the day before. Questions? Reply to this email.", STOP],
+    }),
+    text: `${o.title} is on ${longDate(o.date)}.\n\n1. Print the table cards now: ${o.cards}\n2. Send your guests this message:\n${whatsapp}\n3. Brief your MC with the live screen: ${o.mcLive}\n4. Set your ODOGWU ALERT level on the dashboard.\n\nDashboard: ${o.link}\n\n${STOP}`,
+  };
+}
+
+/** To a partner, 3 days after signing up with no celebrations yet. */
+export function partnerFirstClientEmail(o: { name: string; kind: "venue" | "planner"; clientLink: string; dashboard: string; demo: string; sharePct: number }): Email {
+  const forward = `Hi! For your celebration, guests can now spray money from their phones with Odogwu. The notes rain on the big screen with their names, and every naira goes straight into your bank account the next working day. It's free for you, and takes 2 minutes to set up: ${o.clientLink}`;
+  return {
+    subject: "Your first celebration on Odogwu",
+    html: layout({
+      preheader: "A ready-to-send message for your next client.",
+      heading: `Let's get your first one, ${o.name}`,
+      intro: [
+        `Every celebration made with your link earns you ${o.sharePct || 1}% of everything sprayed. The quickest way to start is with your very next ${o.kind === "planner" ? "client" : "booking"}.`,
+      ],
+      steps: [
+        { title: "Copy and send this message", text: forward },
+        { title: "Show them the demo", text: `Open the demo spray wall on your phone or screen. Clients get it in 10 seconds: ${o.demo}` },
+        { title: "Let us set it up for you", text: "Reply with your client's name and party date, and we'll walk them through it." },
+      ],
+      button: { label: "Open my partner dashboard", url: o.dashboard },
+      after: [STOP],
+    }),
+    text: `Let's get your first one, ${o.name}.\n\nSend your next client this message:\n${forward}\n\nShow them the demo: ${o.demo}\n\nOr reply with your client's name and party date and we'll set it up with them.\n\nDashboard: ${o.dashboard}\n\n${STOP}`,
+  };
+}
+
+/** To a partner, ~10 days after signing up with still no celebrations: short and personal. */
+export function partnerCheckInEmail(o: { name: string; clientLink: string }): Email {
+  const lines = [
+    `Hi ${o.name},`,
+    "Emeka here, from Odogwu. I noticed you signed up but haven't had a celebration on Odogwu yet, so I wanted to check in.",
+    "Is anything getting in the way? A question from a client, how payments work, or just timing? Reply and tell me. I read every reply myself.",
+    "If you have an event coming up, send me the date and I'll help you set it up so it goes perfectly.",
+  ];
+  return {
+    subject: "Quick question",
+    html: layout({
+      preheader: "Anything getting in the way?",
+      heading: "Quick check-in",
+      intro: lines,
+      button: { label: "Your link for clients", url: o.clientLink },
+      after: ["Emeka, Odogwu", STOP],
+    }),
+    text: `${lines.join("\n\n")}\n\nYour link for clients: ${o.clientLink}\n\nEmeka, Odogwu\n\n${STOP}`,
+  };
+}

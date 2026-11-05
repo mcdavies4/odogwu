@@ -5,7 +5,7 @@ import { confirmPayment } from "@/lib/payments";
 import { confirmThemePayment } from "@/lib/themePayments";
 import { buildReport } from "@/lib/report";
 import { sendEmail } from "@/lib/email";
-import { digestEmail, reminderEmail, summaryEmail } from "@/lib/emailTemplates";
+import { digestEmail, hostGetReadyEmail, hostWeekEmail, partnerCheckInEmail, partnerFirstClientEmail, reminderEmail, summaryEmail } from "@/lib/emailTemplates";
 import { siteUrl } from "@/lib/events";
 import { adminEmail } from "@/lib/ops";
 import { SUPPORT_EMAIL } from "@/lib/contact";
@@ -129,6 +129,91 @@ export async function GET(req: Request) {
   out.reminders = reminders;
   out.summaries = summaries;
 
+  // ---- 2b. Follow-ups for people who signed up but haven't got going (needs followups.sql)
+  let getReady = 0, weekBefore = 0, partnerNudges = 0;
+  const followUpsOn = !(await db.from("events").select("getready_sent_at").limit(1)).error;
+  if (!followUpsOn) attention.push("Follow-up emails to new hosts and partners are off: run supabase/followups.sql in Supabase.");
+  if (followUpsOn) {
+    const hasPaid = async (eventId: string) =>
+      ((await db.from("payments").select("id").eq("event_id", eventId).eq("status", "success").limit(1)).data ?? []).length > 0;
+    type Fe = Ev & { created_at: string };
+
+    // Host, 2–30 days after creating: "Let's get it ready" (only if nothing has been sprayed and the party isn't in the next 2 days)
+    const { data: fresh } = await db
+      .from("events")
+      .select("id,slug,title,celebrant_name,event_date,host_key,host_email,bank_name,account_name,created_at")
+      .is("getready_sent_at", null).eq("emails_off", false).not("host_email", "is", null)
+      .lt("created_at", ago(2 * 86400_000)).gt("created_at", ago(30 * 86400_000))
+      .limit(200);
+    for (const ev of (fresh ?? []) as Fe[]) {
+      try {
+        const done = async () => { await db.from("events").update({ getready_sent_at: new Date().toISOString() }).eq("id", ev.id); };
+        if (ev.event_date && ev.event_date <= tomorrow) { await done(); continue; } // the day-before email covers it
+        if (await hasPaid(ev.id)) { await done(); continue; } // already going
+        const k = encodeURIComponent(ev.host_key);
+        const mail = hostGetReadyEmail({
+          title: ev.title, celebrant: ev.celebrant_name, date: ev.event_date, payee: ev.account_name, bank: ev.bank_name,
+          link: `${site}/h/${ev.slug}?key=${k}`, cards: `${site}/h/${ev.slug}/cards?key=${k}`, demo: `${site}/demo`,
+        });
+        if (await sendEmail(ev.host_email!, mail.subject, mail.html, mail.text, { replyTo: SUPPORT_EMAIL })) { await done(); getReady++; }
+      } catch (e) { console.error("get-ready email failed", ev.slug, e); }
+    }
+
+    // Host, exactly one week before the party
+    const { data: nextWeek } = await db
+      .from("events")
+      .select("id,slug,title,celebrant_name,event_date,host_key,host_email,bank_name,account_name,created_at")
+      .eq("event_date", lagosDay(7)).is("week_sent_at", null).eq("emails_off", false).not("host_email", "is", null)
+      .limit(200);
+    for (const ev of (nextWeek ?? []) as Fe[]) {
+      try {
+        const k = encodeURIComponent(ev.host_key);
+        const mail = hostWeekEmail({
+          title: ev.title, celebrant: ev.celebrant_name, date: ev.event_date, link: `${site}/h/${ev.slug}?key=${k}`,
+          cards: `${site}/h/${ev.slug}/cards?key=${k}`, mcLive: `${site}/h/${ev.slug}/mc/live?key=${k}`, guestLink: `${site}/e/${ev.slug}`,
+        });
+        if (await sendEmail(ev.host_email!, mail.subject, mail.html, mail.text, { replyTo: SUPPORT_EMAIL })) {
+          await db.from("events").update({ week_sent_at: new Date().toISOString() }).eq("id", ev.id);
+          weekBefore++;
+        }
+      } catch (e) { console.error("week email failed", ev.slug, e); }
+    }
+
+    // Partners with no celebrations yet: day 3 "your first client", day 10 a personal check-in from Emeka
+    type Pv = { id: string; slug: string; name: string; kind: string; email: string; venue_key: string; share_bps: number; created_at: string; nudge1_sent_at: string | null; nudge2_sent_at: string | null };
+    const { data: quiet } = await db
+      .from("venues")
+      .select("id,slug,name,kind,email,venue_key,share_bps,created_at,nudge1_sent_at,nudge2_sent_at")
+      .is("nudge2_sent_at", null).eq("emails_off", false).not("email", "is", null)
+      .lt("created_at", ago(3 * 86400_000)).gt("created_at", ago(45 * 86400_000))
+      .limit(200);
+    for (const v of (quiet ?? []) as Pv[]) {
+      try {
+        const { count } = await db.from("events").select("id", { count: "exact", head: true }).eq("venue_id", v.id);
+        const now = new Date().toISOString();
+        if ((count ?? 0) > 0) { await db.from("venues").update({ nudge1_sent_at: v.nudge1_sent_at ?? now, nudge2_sent_at: now }).eq("id", v.id); continue; }
+        const clientLink = `${site}/host/new?venue=${v.slug}`;
+        if (!v.nudge1_sent_at) {
+          const mail = partnerFirstClientEmail({
+            name: v.name, kind: v.kind === "planner" ? "planner" : "venue", clientLink,
+            dashboard: `${site}/v/${v.slug}?key=${encodeURIComponent(v.venue_key)}`, demo: `${site}/demo/wall`, sharePct: v.share_bps / 100,
+          });
+          if (await sendEmail(v.email, mail.subject, mail.html, mail.text, { replyTo: SUPPORT_EMAIL })) {
+            await db.from("venues").update({ nudge1_sent_at: now }).eq("id", v.id);
+            partnerNudges++;
+          }
+        } else if (Date.now() - new Date(v.created_at).getTime() > 10 * 86400_000 && Date.now() - new Date(v.nudge1_sent_at).getTime() > 5 * 86400_000) {
+          const mail = partnerCheckInEmail({ name: v.name, clientLink });
+          if (await sendEmail(v.email, mail.subject, mail.html, mail.text, { replyTo: SUPPORT_EMAIL })) {
+            await db.from("venues").update({ nudge2_sent_at: now }).eq("id", v.id);
+            partnerNudges++;
+          }
+        }
+      } catch (e) { console.error("partner nudge failed", v.slug, e); }
+    }
+  }
+  out.followups = getReady + weekBefore + partnerNudges;
+
   // ---- 3. Your morning summary
   const since = ago(86400_000);
   const [created, paid, partners, help, incidents] = await Promise.all([
@@ -163,7 +248,8 @@ export async function GET(req: Request) {
     `Your fees (before Paystack's): ${naira(fees)}`,
     `New partners: ${(partners.data ?? []).length ? (partners.data ?? []).map((p) => `${p.name} (${p.kind}${p.city ? `, ${p.city}` : ""})`).join(", ") : "0"}`,
     `Payments fixed automatically: ${fixed}`,
-    `Host emails sent: ${reminders} day-before, ${summaries} morning-after`,
+    `Host emails sent: ${reminders} day-before, ${summaries} morning-after, ${getReady} get-ready, ${weekBefore} one-week`,
+    `Partner follow-ups sent: ${partnerNudges}`,
     ...(payoutChanges ? [`Payout accounts changed by hosts: ${payoutChanges}`] : []),
   ];
   const mail = digestEmail({ date: lagosDay(0), lines, attention, adminLink: `${site}/admin/inbox` });
